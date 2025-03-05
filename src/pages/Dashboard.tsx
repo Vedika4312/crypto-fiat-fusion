@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import BalanceCard from '@/components/BalanceCard';
@@ -9,12 +8,12 @@ import { ArrowDownToLine, ArrowUpToLine, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
-  // Mock transaction data
+  // Mock transaction data with proper type assertions
   const [transactions] = useState([
     {
       id: '1',
       type: 'receive' as const,
-      status: 'completed',
+      status: 'completed' as const,
       amount: 250.0,
       currency: 'USD',
       isCrypto: false,
@@ -24,7 +23,7 @@ const Dashboard = () => {
     {
       id: '2',
       type: 'send' as const,
-      status: 'completed',
+      status: 'completed' as const,
       amount: 0.002,
       currency: 'BTC',
       isCrypto: true,
@@ -34,7 +33,7 @@ const Dashboard = () => {
     {
       id: '3',
       type: 'convert' as const,
-      status: 'completed',
+      status: 'completed' as const,
       amount: 100.0,
       currency: 'USD',
       isCrypto: false,
@@ -44,7 +43,7 @@ const Dashboard = () => {
     {
       id: '4',
       type: 'receive' as const,
-      status: 'pending',
+      status: 'pending' as const,
       amount: 0.05,
       currency: 'ETH',
       isCrypto: true,
