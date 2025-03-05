@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
-import { ArrowRight, CheckCircle, CreditCard, Globe, Lock, Wallet } from 'lucide-react';
+import { ArrowRight, CheckCircle, CreditCard, Globe, Lock, Wallet, RefreshCw } from 'lucide-react';
 
 const Index = () => {
   return (

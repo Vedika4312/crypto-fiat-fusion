@@ -13,7 +13,7 @@ const Dashboard = () => {
   const [transactions] = useState([
     {
       id: '1',
-      type: 'receive',
+      type: 'receive' as const,
       status: 'completed',
       amount: 250.0,
       currency: 'USD',
@@ -23,7 +23,7 @@ const Dashboard = () => {
     },
     {
       id: '2',
-      type: 'send',
+      type: 'send' as const,
       status: 'completed',
       amount: 0.002,
       currency: 'BTC',
@@ -33,7 +33,7 @@ const Dashboard = () => {
     },
     {
       id: '3',
-      type: 'convert',
+      type: 'convert' as const,
       status: 'completed',
       amount: 100.0,
       currency: 'USD',
@@ -43,7 +43,7 @@ const Dashboard = () => {
     },
     {
       id: '4',
-      type: 'receive',
+      type: 'receive' as const,
       status: 'pending',
       amount: 0.05,
       currency: 'ETH',
