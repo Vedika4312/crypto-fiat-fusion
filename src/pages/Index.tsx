@@ -1,10 +1,13 @@
-
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import { ArrowRight, CheckCircle, CreditCard, Globe, Lock, Wallet, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const Index = () => {
+  const { user } = useAuth();
+  const callToActionLink = user ? "/dashboard" : "/auth";
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -25,13 +28,13 @@ const Index = () => {
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button asChild size="lg" className="gap-2">
-                  <Link to="/dashboard">
+                  <Link to={callToActionLink}>
                     Get Started <ArrowRight className="h-5 w-5" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link to="/dashboard">
-                    View Demo Account
+                  <Link to={user ? "/dashboard" : "/auth"}>
+                    {user ? "Go to Dashboard" : "View Demo Account"}
                   </Link>
                 </Button>
               </div>
@@ -148,10 +151,14 @@ const Index = () => {
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Button asChild size="lg">
-                    <Link to="/dashboard">Create Account</Link>
+                    <Link to={user ? "/dashboard" : "/auth?tab=signup"}>
+                      {user ? "Go to Dashboard" : "Create Account"}
+                    </Link>
                   </Button>
                   <Button asChild size="lg" variant="outline">
-                    <Link to="/dashboard">Learn More</Link>
+                    <Link to={user ? "/dashboard" : "/auth"}>
+                      {user ? "View Account" : "Learn More"}
+                    </Link>
                   </Button>
                 </div>
                 

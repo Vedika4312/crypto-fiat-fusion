@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Wallet, Send, ArrowDownToLine, RefreshCw, Home } from 'lucide-react';
+import { Wallet, Send, ArrowDownToLine, RefreshCw, Home, LogOut } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface NavItem {
   label: string;
@@ -14,6 +15,7 @@ interface NavItem {
 const Navbar = () => {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const { user, signOut } = useAuth();
 
   // Handle scroll effect for transparent navbar
   useEffect(() => {
@@ -52,6 +54,12 @@ const Navbar = () => {
   ];
 
   const isLandingPage = location.pathname === '/';
+  const isAuthPage = location.pathname === '/auth';
+
+  // Don't show navbar on auth page
+  if (isAuthPage) {
+    return null;
+  }
 
   return (
     <header
@@ -70,7 +78,7 @@ const Navbar = () => {
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 mx-6">
-          {!isLandingPage && navItems.map((item) => (
+          {!isLandingPage && user && navItems.map((item) => (
             <Link
               key={item.href}
               to={item.href}
@@ -91,16 +99,26 @@ const Navbar = () => {
           {isLandingPage ? (
             <>
               <Button asChild variant="ghost">
-                <Link to="/dashboard">Log in</Link>
+                <Link to="/auth">Log in</Link>
               </Button>
               <Button asChild>
-                <Link to="/dashboard">Get Started</Link>
+                <Link to="/auth?tab=signup">Get Started</Link>
               </Button>
             </>
+          ) : user ? (
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" className="rounded-full">
+                <Wallet className="mr-2 h-4 w-4" />
+                <span className="font-medium">ID: {user.id.substring(0, 7).toUpperCase()}</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={signOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </Button>
+            </div>
           ) : (
-            <Button variant="outline" size="sm" className="rounded-full">
-              <Wallet className="mr-2 h-4 w-4" />
-              <span className="font-medium">ID: 7829F3A</span>
+            <Button asChild>
+              <Link to="/auth">Sign In</Link>
             </Button>
           )}
         </div>
