@@ -124,7 +124,7 @@ export default {
 				'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite'
 			},
 			transitionTimingFunction: {
-				'ease-spring': 'cubic-bezier(0.22, 1, 0.36, 1)'
+				'spring': 'cubic-bezier(0.22, 1, 0.36, 1)'
 			},
 			boxShadow: {
 				'glass': '0 4px 20px 0 rgba(0, 0, 0, 0.05)',
