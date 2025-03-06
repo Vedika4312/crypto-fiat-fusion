@@ -8,7 +8,6 @@ import Dashboard from './pages/Dashboard';
 import SendMoney from './pages/Send';
 import ReceiveMoney from './pages/Receive';
 import ConvertCurrency from './pages/Convert';
-import Admin from '@/pages/Admin';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -36,7 +35,6 @@ function App() {
           <Route path="/send" element={<ProtectedRoute><SendMoney /></ProtectedRoute>} />
           <Route path="/receive" element={<ProtectedRoute><ReceiveMoney /></ProtectedRoute>} />
           <Route path="/convert" element={<ProtectedRoute><ConvertCurrency /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         </Routes>
       </Router>
     </AuthProvider>
