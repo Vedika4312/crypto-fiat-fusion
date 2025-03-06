@@ -2,12 +2,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import SignIn from './pages/Auth';
-import SignUp from './pages/Auth';
+import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
-import SendMoney from './pages/Send';
-import ReceiveMoney from './pages/Receive';
-import ConvertCurrency from './pages/Convert';
+import Send from './pages/Send';
+import Receive from './pages/Receive';
+import Convert from './pages/Convert';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -25,19 +24,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
-          <Route path="/auth" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/send" element={<ProtectedRoute><SendMoney /></ProtectedRoute>} />
-          <Route path="/receive" element={<ProtectedRoute><ReceiveMoney /></ProtectedRoute>} />
-          <Route path="/convert" element={<ProtectedRoute><ConvertCurrency /></ProtectedRoute>} />
+          <Route path="/send" element={<ProtectedRoute><Send /></ProtectedRoute>} />
+          <Route path="/receive" element={<ProtectedRoute><Receive /></ProtectedRoute>} />
+          <Route path="/convert" element={<ProtectedRoute><Convert /></ProtectedRoute>} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
