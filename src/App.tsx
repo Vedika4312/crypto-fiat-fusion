@@ -1,12 +1,13 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
+import SignIn from './pages/Auth';
+import SignUp from './pages/Auth';
 import Dashboard from './pages/Dashboard';
-import SendMoney from './pages/SendMoney';
-import ReceiveMoney from './pages/ReceiveMoney';
-import ConvertCurrency from './pages/ConvertCurrency';
+import SendMoney from './pages/Send';
+import ReceiveMoney from './pages/Receive';
+import ConvertCurrency from './pages/Convert';
 import Admin from '@/pages/Admin';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
