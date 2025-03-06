@@ -1,77 +1,45 @@
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
+import Dashboard from './pages/Dashboard';
+import SendMoney from './pages/SendMoney';
+import ReceiveMoney from './pages/ReceiveMoney';
+import ConvertCurrency from './pages/ConvertCurrency';
+import Admin from '@/pages/Admin';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/context/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
 
-// Pages
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import Send from "./pages/Send";
-import Receive from "./pages/Receive";
-import Convert from "./pages/Convert";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
+  if (loading) {
+    return <div>Loading...</div>; // Or a loading spinner
+  }
 
-const queryClient = new QueryClient();
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            
-            {/* Protected routes */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/send" 
-              element={
-                <ProtectedRoute>
-                  <Send />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/receive" 
-              element={
-                <ProtectedRoute>
-                  <Receive />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/convert" 
-              element={
-                <ProtectedRoute>
-                  <Convert />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Add redirect for app/ to dashboard */}
-            <Route path="/app" element={<Navigate to="/dashboard" replace />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  return children;
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/auth" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/send" element={<ProtectedRoute><SendMoney /></ProtectedRoute>} />
+          <Route path="/receive" element={<ProtectedRoute><ReceiveMoney /></ProtectedRoute>} />
+          <Route path="/convert" element={<ProtectedRoute><ConvertCurrency /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;

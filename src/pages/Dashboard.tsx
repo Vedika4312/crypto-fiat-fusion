@@ -4,12 +4,14 @@ import BalanceCard from '@/components/BalanceCard';
 import TransactionList from '@/components/TransactionList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowDownToLine, ArrowUpToLine, RefreshCw } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpToLine, RefreshCw, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useAdmin } from '@/hooks/useAdmin';
 
 const Dashboard = () => {
   const { transactions, balances, loading } = useTransactions();
+  const { isAdmin } = useAdmin();
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,6 +56,15 @@ const Dashboard = () => {
                     Convert Currency
                   </Link>
                 </Button>
+                
+                {isAdmin && (
+                  <Button asChild variant="secondary" className="justify-start mt-2">
+                    <Link to="/admin">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin Controls
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
             
