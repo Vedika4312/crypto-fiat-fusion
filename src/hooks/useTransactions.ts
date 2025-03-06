@@ -87,6 +87,16 @@ export function useTransactions() {
             title: "Payment Received!",
             description: `You received ${transaction.amount} ${transaction.currency}`,
           });
+        } else if (transaction.type === 'admin_deposit' && transaction.user_id === user.id) {
+          toast({
+            title: "Funds Added!",
+            description: `${transaction.amount} ${transaction.currency} was added to your account`,
+          });
+        } else if (transaction.type === 'admin_withdrawal' && transaction.user_id === user.id) {
+          toast({
+            title: "Funds Withdrawn!",
+            description: `${transaction.amount} ${transaction.currency} was withdrawn from your account`,
+          });
         }
         
         // Update balances
@@ -95,12 +105,14 @@ export function useTransactions() {
             const currency = transaction.currency;
             const prevBalance = prevBalances[currency] || 0;
             
-            if (transaction.type === 'receive' && transaction.user_id === user.id) {
+            if ((transaction.type === 'receive' || transaction.type === 'admin_deposit') && 
+                transaction.user_id === user.id) {
               return {
                 ...prevBalances,
                 [currency]: prevBalance + Number(transaction.amount)
               };
-            } else if (transaction.type === 'send' && transaction.user_id === user.id) {
+            } else if ((transaction.type === 'send' || transaction.type === 'admin_withdrawal') && 
+                       transaction.user_id === user.id) {
               return {
                 ...prevBalances,
                 [currency]: prevBalance - Number(transaction.amount)
