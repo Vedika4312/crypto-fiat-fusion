@@ -6,14 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Check, Copy, Download, QrCode } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 const ReceiveForm = () => {
   const [copied, setCopied] = useState(false);
-  const userID = '7829F3A';
+  const { user } = useAuth();
+  
+  const userId = user?.id || '';
+  const shortenedId = userId.substring(0, 8);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(userID);
+    navigator.clipboard.writeText(userId);
     setCopied(true);
+    toast.success('User ID copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -34,7 +40,7 @@ const ReceiveForm = () => {
             <div className="space-y-2">
               <Label>Your User ID</Label>
               <div className="flex">
-                <Input readOnly value={userID} className="rounded-r-none font-mono text-center text-lg" />
+                <Input readOnly value={userId} className="rounded-r-none font-mono text-center text-sm sm:text-base overflow-hidden text-ellipsis" />
                 <Button 
                   variant="secondary" 
                   type="button" 
@@ -68,13 +74,13 @@ const ReceiveForm = () => {
             </div>
             
             <div className="flex gap-2 w-full">
-              <Button className="flex-1" variant="outline">
+              <Button className="flex-1" variant="outline" onClick={handleCopy}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copy ID
+              </Button>
+              <Button className="flex-1" variant="outline" disabled>
                 <Download className="mr-2 h-4 w-4" />
                 Download
-              </Button>
-              <Button className="flex-1" variant="outline">
-                <Copy className="mr-2 h-4 w-4" />
-                Copy
               </Button>
             </div>
             

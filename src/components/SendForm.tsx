@@ -10,15 +10,18 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ArrowRight, Send } from 'lucide-react';
+import { sendPayment } from '@/services/transactionService';
+import { useAuth } from '@/context/AuthContext';
 
 const sendSchema = z.object({
-  recipient: z.string().min(1, { message: 'Recipient is required' }),
+  recipient: z.string().min(1, { message: 'Recipient ID is required' }),
   amount: z.coerce.number().positive({ message: 'Amount must be greater than 0' }),
   description: z.string().optional(),
 });
 
 const SendForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
   
   const form = useForm<z.infer<typeof sendSchema>>({
     resolver: zodResolver(sendSchema),
@@ -32,10 +35,25 @@ const SendForm = () => {
   const onSubmit = async (values: z.infer<typeof sendSchema>) => {
     try {
       setIsSubmitting(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      console.log('Sending payment:', values);
+      // Make sure user is authenticated
+      if (!user) {
+        toast.error('You must be logged in to send payments');
+        return;
+      }
+      
+      // Send the payment
+      const { data, error } = await sendPayment({
+        recipient_id: values.recipient,
+        amount: values.amount,
+        currency: 'USD',
+        is_crypto: false,
+        description: values.description,
+      });
+      
+      if (error) {
+        throw error;
+      }
       
       toast.success('Payment sent successfully!', {
         description: `Sent ${values.amount} to ${values.recipient}`,
@@ -43,9 +61,10 @@ const SendForm = () => {
       
       // Reset form
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Payment error:', error);
       toast.error('Failed to send payment', {
-        description: 'Please try again later',
+        description: error.message || 'Please try again later',
       });
     } finally {
       setIsSubmitting(false);
@@ -74,7 +93,7 @@ const SendForm = () => {
                     <FormItem>
                       <FormLabel>Recipient ID</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter recipient's ID" {...field} />
+                        <Input placeholder="Enter recipient's User ID" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

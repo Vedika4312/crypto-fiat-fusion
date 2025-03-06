@@ -4,26 +4,44 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatCrypto } from '@/utils/formatCurrency';
 import { ArrowDown, ArrowUp, RefreshCw, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Transaction {
-  id: string;
-  type: 'send' | 'receive' | 'convert';
-  status: 'completed' | 'pending' | 'failed';
-  amount: number;
-  currency: string;
-  isCrypto: boolean;
-  recipient?: string;
-  sender?: string;
-  date: Date;
-  description?: string;
-}
+import { Transaction } from '@/services/transactionService';
 
 interface TransactionListProps {
   transactions: Transaction[];
+  isLoading?: boolean;
   className?: string;
 }
 
-const TransactionList = ({ transactions, className }: TransactionListProps) => {
+const TransactionList = ({ transactions, isLoading = false, className }: TransactionListProps) => {
+  if (isLoading) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle>Recent Transactions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, index) => (
+              <div key={index} className="flex items-center justify-between p-4 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-muted rounded-full"></div>
+                  <div>
+                    <div className="h-4 w-32 bg-muted rounded"></div>
+                    <div className="h-3 w-20 bg-muted/50 rounded mt-2"></div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="h-4 w-20 bg-muted rounded"></div>
+                  <div className="h-4 w-16 bg-muted/50 rounded mt-2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!transactions || transactions.length === 0) {
     return (
       <Card className={className}>
@@ -63,9 +81,9 @@ const TransactionList = ({ transactions, className }: TransactionListProps) => {
 
   const formatTransactionAmount = (transaction: Transaction) => {
     const prefix = transaction.type === 'send' ? '-' : transaction.type === 'receive' ? '+' : '';
-    const formattedAmount = transaction.isCrypto
-      ? formatCrypto(transaction.amount, transaction.currency)
-      : formatCurrency(transaction.amount, transaction.currency);
+    const formattedAmount = transaction.is_crypto
+      ? formatCrypto(Number(transaction.amount), transaction.currency)
+      : formatCurrency(Number(transaction.amount), transaction.currency);
     
     return `${prefix}${formattedAmount}`;
   };
@@ -77,6 +95,16 @@ const TransactionList = ({ transactions, className }: TransactionListProps) => {
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
+  };
+
+  const getTransactionDescription = (transaction: Transaction) => {
+    if (transaction.type === 'send') {
+      return 'Sent to User';
+    } else if (transaction.type === 'receive') {
+      return 'Received from User';
+    } else {
+      return transaction.description || 'Converted currency';
+    }
   };
 
   return (
@@ -97,16 +125,11 @@ const TransactionList = ({ transactions, className }: TransactionListProps) => {
                 </div>
                 <div>
                   <div className="font-medium">
-                    {transaction.type === 'send' && 'Sent to '}
-                    {transaction.type === 'receive' && 'Received from '}
-                    {transaction.type === 'convert' && 'Converted '}
-                    {transaction.type === 'send' && transaction.recipient}
-                    {transaction.type === 'receive' && transaction.sender}
-                    {transaction.type === 'convert' && transaction.description}
+                    {getTransactionDescription(transaction)}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {formatTransactionDate(transaction.date)}
+                    {formatTransactionDate(transaction.created_at)}
                   </div>
                 </div>
               </div>

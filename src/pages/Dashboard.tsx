@@ -1,4 +1,4 @@
-import { useState } from 'react';
+
 import Navbar from '@/components/Navbar';
 import BalanceCard from '@/components/BalanceCard';
 import TransactionList from '@/components/TransactionList';
@@ -6,51 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowDownToLine, ArrowUpToLine, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTransactions } from '@/hooks/useTransactions';
 
 const Dashboard = () => {
-  // Mock transaction data with proper type assertions
-  const [transactions] = useState([
-    {
-      id: '1',
-      type: 'receive' as const,
-      status: 'completed' as const,
-      amount: 250.0,
-      currency: 'USD',
-      isCrypto: false,
-      sender: 'John D.',
-      date: new Date(Date.now() - 3600000), // 1 hour ago
-    },
-    {
-      id: '2',
-      type: 'send' as const,
-      status: 'completed' as const,
-      amount: 0.002,
-      currency: 'BTC',
-      isCrypto: true,
-      recipient: 'Linda M.',
-      date: new Date(Date.now() - 86400000), // 1 day ago
-    },
-    {
-      id: '3',
-      type: 'convert' as const,
-      status: 'completed' as const,
-      amount: 100.0,
-      currency: 'USD',
-      isCrypto: false,
-      description: 'USD to BTC',
-      date: new Date(Date.now() - 172800000), // 2 days ago
-    },
-    {
-      id: '4',
-      type: 'receive' as const,
-      status: 'pending' as const,
-      amount: 0.05,
-      currency: 'ETH',
-      isCrypto: true,
-      sender: 'Crypto Exchange',
-      date: new Date(Date.now() - 259200000), // 3 days ago
-    },
-  ]);
+  const { transactions, balances, loading } = useTransactions();
 
   return (
     <div className="min-h-screen bg-background">
@@ -63,7 +22,11 @@ const Dashboard = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Balance Card */}
-            <BalanceCard className="lg:col-span-2" />
+            <BalanceCard 
+              className="lg:col-span-2" 
+              balances={balances}
+              isLoading={loading}
+            />
             
             {/* Quick Actions */}
             <Card>
@@ -97,6 +60,7 @@ const Dashboard = () => {
             {/* Transaction History */}
             <TransactionList 
               transactions={transactions} 
+              isLoading={loading}
               className="lg:col-span-3"
             />
           </div>
