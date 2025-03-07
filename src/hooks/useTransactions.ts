@@ -48,7 +48,23 @@ export function useTransactions() {
           balanceRecord[balance.currency] = Number(balance.balance);
         });
         
+        // Ensure we have entries for all supported currencies
+        const supportedCurrencies = ['USD', 'EUR', 'BTC', 'ETH'];
+        supportedCurrencies.forEach(currency => {
+          if (balanceRecord[currency] === undefined) {
+            balanceRecord[currency] = 0;
+          }
+        });
+        
         setBalances(balanceRecord);
+      } else {
+        // If no balances found, set defaults for all supported currencies
+        setBalances({
+          USD: 0,
+          EUR: 0,
+          BTC: 0,
+          ETH: 0
+        });
       }
       
       setLoading(false);

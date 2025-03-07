@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { Wallet } from 'lucide-react';
+import { adminAddFunds } from '@/services/transactionService';
 
 const Auth = () => {
   const { user, signIn, signUp } = useAuth();
@@ -40,18 +41,35 @@ const Auth = () => {
         : await signUp(email, password);
       
       if (error) {
+        console.error("Auth error:", error);
         toast({
           title: "Authentication failed",
-          description: error.message,
+          description: error.message || "Please check your credentials and try again",
           variant: "destructive",
         });
       } else if (action === 'signup') {
+        // Create initial balances for new users
+        if (user) {
+          try {
+            // Add initial amounts of each currency for new users
+            await Promise.all([
+              adminAddFunds(user.id, 100, 'USD', false, 'Initial deposit'),
+              adminAddFunds(user.id, 100, 'EUR', false, 'Initial deposit'),
+              adminAddFunds(user.id, 0.005, 'BTC', true, 'Initial deposit'),
+              adminAddFunds(user.id, 0.05, 'ETH', true, 'Initial deposit')
+            ]);
+          } catch (fundError) {
+            console.error("Failed to add initial funds:", fundError);
+          }
+        }
+        
         toast({
           title: "Account created!",
           description: "Please check your email to confirm your account.",
         });
       }
     } catch (error) {
+      console.error("Unexpected auth error:", error);
       toast({
         title: "An error occurred",
         description: "Please try again later",
