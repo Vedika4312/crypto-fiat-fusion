@@ -55,8 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Create default balances if they don't exist
         if (session?.user) {
           try {
-            // This will query the user_balances table and create entries if they don't exist
-            await supabase.rpc('ensure_user_balances', { user_id: session.user.id });
+            // This will call the function to ensure user balances exist
+            await supabase.rpc('ensure_user_balances', { 
+              user_id: session.user.id 
+            });
           } catch (balanceError) {
             console.error("Failed to ensure user balances:", balanceError);
           }
