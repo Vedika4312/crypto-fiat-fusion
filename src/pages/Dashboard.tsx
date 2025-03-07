@@ -1,6 +1,7 @@
 
 import Navbar from '@/components/Navbar';
 import BalanceCard from '@/components/BalanceCard';
+import BalanceTable from '@/components/BalanceTable';
 import TransactionList from '@/components/TransactionList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +57,13 @@ const Dashboard = () => {
                 </Button>
               </CardContent>
             </Card>
+            
+            {/* Balance Table - Added new component */}
+            <BalanceTable 
+              balances={balances}
+              isLoading={loading}
+              className="lg:col-span-3"
+            />
             
             {/* Transaction History */}
             <TransactionList 
