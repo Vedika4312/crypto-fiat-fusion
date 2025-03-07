@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 
 export interface Transaction {
   id: string;
@@ -40,48 +39,42 @@ export const sendPayment = async (transactionData: TransactionPayload) => {
     
     if (!user) throw new Error('User not authenticated');
     
-    const { data, error } = await supabase
-      .from('transactions')
-      .insert({
-        type: 'send',
-        status: 'completed',
-        amount: transactionData.amount,
-        currency: transactionData.currency,
-        is_crypto: transactionData.is_crypto,
-        recipient_id: transactionData.recipient_id,
-        sender_id: user.id,
-        user_id: user.id,
-        description: transactionData.description,
-      })
-      .select()
+    // Check if recipient exists
+    const { data: recipientExists, error: recipientError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', transactionData.recipient_id)
       .single();
     
-    if (error) throw error;
+    if (recipientError || !recipientExists) throw new Error('Recipient not found');
     
-    // Create a corresponding "receive" transaction for the recipient
-    const { error: receiveError } = await supabase
-      .from('transactions')
-      .insert({
-        type: 'receive',
-        status: 'completed',
-        amount: transactionData.amount,
-        currency: transactionData.currency,
-        is_crypto: transactionData.is_crypto,
-        recipient_id: transactionData.recipient_id,
-        sender_id: user.id,
-        user_id: transactionData.recipient_id,
-        description: transactionData.description,
-      });
+    // Check if sender has sufficient balance
+    const { data: senderBalance, error: balanceError } = await supabase
+      .from('user_balances')
+      .select('balance')
+      .eq('user_id', user.id)
+      .eq('currency', transactionData.currency)
+      .single();
     
-    if (receiveError) throw receiveError;
+    if (balanceError) throw new Error('Failed to fetch your balance');
     
-    // Update sender's balance (subtract amount)
-    await updateUserBalance(user.id, transactionData.currency, -transactionData.amount);
+    if (!senderBalance || Number(senderBalance.balance) < transactionData.amount) {
+      throw new Error(`Insufficient balance. You need ${transactionData.amount} ${transactionData.currency} but only have ${senderBalance?.balance || 0}`);
+    }
     
-    // Update recipient's balance (add amount)
-    await updateUserBalance(transactionData.recipient_id, transactionData.currency, transactionData.amount);
+    // Start a transaction using RPC to ensure data consistency
+    const { data: transaction, error: transactionError } = await supabase.rpc('create_transaction', {
+      p_sender_id: user.id,
+      p_recipient_id: transactionData.recipient_id,
+      p_amount: transactionData.amount,
+      p_currency: transactionData.currency,
+      p_is_crypto: transactionData.is_crypto,
+      p_description: transactionData.description || 'Payment'
+    });
     
-    return { data, error: null };
+    if (transactionError) throw transactionError;
+    
+    return { data: transaction, error: null };
   } catch (error) {
     console.error('Error sending payment:', error);
     return { data: null, error };
@@ -154,6 +147,10 @@ export const updateUserBalance = async (userId: string, currency: string, amount
     if (existingBalance) {
       // Update existing balance
       const newBalance = Number(existingBalance.balance) + amount;
+      
+      // Prevent negative balances
+      if (newBalance < 0) throw new Error('Insufficient balance');
+      
       const { error: updateError } = await supabase
         .from('user_balances')
         .update({ 
@@ -164,7 +161,9 @@ export const updateUserBalance = async (userId: string, currency: string, amount
       
       if (updateError) throw updateError;
     } else {
-      // Create new balance record
+      // Create new balance record - only allow positive initial balances
+      if (amount < 0) throw new Error('Cannot create negative balance');
+      
       const { error: insertError } = await supabase
         .from('user_balances')
         .insert({
@@ -195,8 +194,12 @@ export const subscribeToTransactions = (callback: (transaction: Transaction) => 
         table: 'transactions',
       },
       (payload) => {
-        // Only trigger callback if the transaction is related to the current user
-        const transaction = payload.new as Transaction;
+        // Convert the payload to a Transaction object
+        const transaction = {
+          ...payload.new as Transaction,
+          created_at: new Date(payload.new.created_at),
+          updated_at: new Date(payload.new.updated_at),
+        };
         callback(transaction);
       }
     )

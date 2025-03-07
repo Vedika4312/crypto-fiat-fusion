@@ -5,8 +5,7 @@ import {
   Transaction, 
   getTransactions, 
   getUserBalances,
-  subscribeToTransactions,
-  updateUserBalance
+  subscribeToTransactions
 } from '@/services/transactionService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,13 +24,13 @@ export function useTransactions() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Fetch transactions and balances
-  useEffect(() => {
+  // Function to fetch data
+  const fetchData = async () => {
     if (!user) return;
-
-    async function fetchData() {
-      setLoading(true);
-      
+    
+    setLoading(true);
+    
+    try {
       const [transactionsResponse, balancesResponse] = await Promise.all([
         getTransactions(),
         getUserBalances()
@@ -66,12 +65,22 @@ export function useTransactions() {
           ETH: 0
         });
       }
-      
+    } catch (error) {
+      console.error('Error fetching transaction data:', error);
+      toast({
+        title: "Failed to load data",
+        description: "Please try refreshing the page",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
     }
-    
+  };
+
+  // Fetch transactions and balances
+  useEffect(() => {
     fetchData();
-  }, [user]);
+  }, [user, toast]);
 
   // Subscribe to real-time updates
   useEffect(() => {
@@ -89,45 +98,57 @@ export function useTransactions() {
           const exists = prevTransactions.some(t => t.id === transaction.id);
           if (exists) return prevTransactions;
           
-          // Format dates
-          const formattedTransaction = {
-            ...transaction,
-            created_at: new Date(transaction.created_at),
-            updated_at: new Date(transaction.updated_at)
-          };
-          
           // Add the new transaction at the beginning
-          return [formattedTransaction, ...prevTransactions];
+          return [transaction, ...prevTransactions];
         });
         
         // Show a toast notification for new transactions
-        if (transaction.type === 'receive' && transaction.user_id === user.id) {
+        if (transaction.type === 'receive' && transaction.recipient_id === user.id) {
           toast({
             title: "Payment Received!",
             description: `You received ${transaction.amount} ${transaction.currency}`,
           });
-        } else if (transaction.type === 'admin_deposit' && transaction.user_id === user.id) {
-          toast({
-            title: "Funds Added!",
-            description: `${transaction.amount} ${transaction.currency} was added to your account`,
+          
+          // Refresh balances to show updated amount
+          getUserBalances().then(response => {
+            if (response.data) {
+              const balanceRecord: Record<string, number> = {};
+              response.data.forEach((balance: UserBalance) => {
+                balanceRecord[balance.currency] = Number(balance.balance);
+              });
+              
+              // Ensure all supported currencies exist
+              const supportedCurrencies = ['USD', 'EUR', 'BTC', 'ETH'];
+              supportedCurrencies.forEach(currency => {
+                if (balanceRecord[currency] === undefined) {
+                  balanceRecord[currency] = 0;
+                }
+              });
+              
+              setBalances(balanceRecord);
+            }
           });
-        } else if (transaction.type === 'admin_withdrawal' && transaction.user_id === user.id) {
-          toast({
-            title: "Funds Withdrawn!",
-            description: `${transaction.amount} ${transaction.currency} was withdrawn from your account`,
+        } else if (transaction.type === 'send' && transaction.sender_id === user.id) {
+          // We already show toast in send form, but refresh balances
+          getUserBalances().then(response => {
+            if (response.data) {
+              const balanceRecord: Record<string, number> = {};
+              response.data.forEach((balance: UserBalance) => {
+                balanceRecord[balance.currency] = Number(balance.balance);
+              });
+              
+              // Ensure all supported currencies exist
+              const supportedCurrencies = ['USD', 'EUR', 'BTC', 'ETH'];
+              supportedCurrencies.forEach(currency => {
+                if (balanceRecord[currency] === undefined) {
+                  balanceRecord[currency] = 0;
+                }
+              });
+              
+              setBalances(balanceRecord);
+            }
           });
         }
-        
-        // Refresh balances after a new transaction
-        getUserBalances().then(response => {
-          if (response.data) {
-            const balanceRecord: Record<string, number> = {};
-            response.data.forEach((balance: UserBalance) => {
-              balanceRecord[balance.currency] = Number(balance.balance);
-            });
-            setBalances(balanceRecord);
-          }
-        });
       }
     });
     
@@ -141,24 +162,6 @@ export function useTransactions() {
     transactions,
     balances,
     loading,
-    refetch: async () => {
-      const [transactionsResponse, balancesResponse] = await Promise.all([
-        getTransactions(),
-        getUserBalances()
-      ]);
-      
-      if (transactionsResponse.data) {
-        setTransactions(transactionsResponse.data);
-      }
-      
-      if (balancesResponse.data) {
-        const balanceRecord: Record<string, number> = {};
-        balancesResponse.data.forEach((balance: UserBalance) => {
-          balanceRecord[balance.currency] = Number(balance.balance);
-        });
-        
-        setBalances(balanceRecord);
-      }
-    }
+    refetch: fetchData
   };
 }

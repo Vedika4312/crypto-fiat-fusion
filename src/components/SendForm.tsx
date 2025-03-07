@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { ArrowRight, Send } from 'lucide-react';
 import { sendPayment } from '@/services/transactionService';
 import { useAuth } from '@/context/AuthContext';
+import { useTransactions } from '@/hooks/useTransactions';
 
 const sendSchema = z.object({
   recipient: z.string().min(1, { message: 'Recipient ID is required' }),
@@ -22,6 +23,7 @@ const sendSchema = z.object({
 const SendForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const { balances, refetch } = useTransactions();
   
   const form = useForm<z.infer<typeof sendSchema>>({
     resolver: zodResolver(sendSchema),
@@ -42,22 +44,41 @@ const SendForm = () => {
         return;
       }
       
+      // Check if recipient is the same as sender
+      if (values.recipient === user.id) {
+        toast.error('You cannot send payments to yourself');
+        return;
+      }
+      
+      // Check if user has sufficient balance
+      const currentBalance = balances?.USD || 0;
+      if (currentBalance < values.amount) {
+        toast.error('Insufficient balance', {
+          description: `You need ${values.amount} USD but only have ${currentBalance} USD`,
+        });
+        return;
+      }
+      
       // Send the payment
       const { data, error } = await sendPayment({
         recipient_id: values.recipient,
         amount: values.amount,
         currency: 'USD',
         is_crypto: false,
-        description: values.description,
+        description: values.description || 'Payment',
       });
       
       if (error) {
         throw error;
       }
       
+      // Success message and refresh balances
       toast.success('Payment sent successfully!', {
-        description: `Sent ${values.amount} to ${values.recipient}`,
+        description: `Sent ${values.amount} USD to ${values.recipient}`,
       });
+      
+      // Refresh transactions and balances
+      refetch();
       
       // Reset form
       form.reset();
@@ -117,9 +138,13 @@ const SendForm = () => {
                             step="0.01" 
                             className="pl-7" 
                             {...field} 
+                            max={balances?.USD || 0}
                           />
                         </div>
                       </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Available balance: ${balances?.USD || 0}
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
