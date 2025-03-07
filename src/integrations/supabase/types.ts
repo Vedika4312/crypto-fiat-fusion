@@ -78,16 +78,33 @@ export type Database = {
         }
         Relationships: []
       }
-    }
-    Views: {
       user_balances: {
         Row: {
-          balance: number | null
-          currency: string | null
-          user_id: string | null
+          balance: number
+          currency: string
+          id: string
+          last_updated: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          currency: string
+          id?: string
+          last_updated?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          currency?: string
+          id?: string
+          last_updated?: string | null
+          user_id?: string
         }
         Relationships: []
       }
+    }
+    Views: {
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never

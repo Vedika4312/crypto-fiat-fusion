@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -22,6 +23,14 @@ export interface TransactionPayload {
   currency: string;
   is_crypto: boolean;
   description?: string;
+}
+
+export interface UserBalance {
+  id: string;
+  user_id: string;
+  currency: string;
+  balance: number;
+  last_updated: Date;
 }
 
 // Function to send payment
@@ -66,6 +75,12 @@ export const sendPayment = async (transactionData: TransactionPayload) => {
     
     if (receiveError) throw receiveError;
     
+    // Update sender's balance (subtract amount)
+    await updateUserBalance(user.id, transactionData.currency, -transactionData.amount);
+    
+    // Update recipient's balance (add amount)
+    await updateUserBalance(transactionData.recipient_id, transactionData.currency, transactionData.amount);
+    
     return { data, error: null };
   } catch (error) {
     console.error('Error sending payment:', error);
@@ -102,7 +117,7 @@ export const getTransactions = async () => {
   }
 };
 
-// Function to get user balances
+// Function to get user balances from the new user_balances table
 export const getUserBalances = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -120,6 +135,52 @@ export const getUserBalances = async () => {
   } catch (error) {
     console.error('Error fetching balances:', error);
     return { data: null, error };
+  }
+};
+
+// Helper function to update a user's balance
+export const updateUserBalance = async (userId: string, currency: string, amount: number) => {
+  try {
+    // First, check if the balance exists
+    const { data: existingBalance, error: fetchError } = await supabase
+      .from('user_balances')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('currency', currency)
+      .maybeSingle();
+    
+    if (fetchError) throw fetchError;
+    
+    if (existingBalance) {
+      // Update existing balance
+      const newBalance = Number(existingBalance.balance) + amount;
+      const { error: updateError } = await supabase
+        .from('user_balances')
+        .update({ 
+          balance: newBalance,
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', existingBalance.id);
+      
+      if (updateError) throw updateError;
+    } else {
+      // Create new balance record
+      const { error: insertError } = await supabase
+        .from('user_balances')
+        .insert({
+          user_id: userId,
+          currency: currency,
+          balance: amount,
+          last_updated: new Date().toISOString()
+        });
+      
+      if (insertError) throw insertError;
+    }
+    
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error updating balance:', error);
+    return { success: false, error };
   }
 };
 
@@ -179,7 +240,11 @@ export const adminAdjustBalance = async (
     
     if (error) throw error;
     
-    // Now fetch the updated balance (the view will automatically update)
+    // Update user balance
+    const balanceChange = type === 'admin_deposit' ? Math.abs(amount) : -Math.abs(amount);
+    await updateUserBalance(userId, currency, balanceChange);
+    
+    // Get the updated balance
     const { data: balanceData, error: balanceError } = await supabase
       .from('user_balances')
       .select('*')
@@ -187,7 +252,7 @@ export const adminAdjustBalance = async (
       .eq('currency', currency)
       .single();
     
-    if (balanceError && balanceError.code !== 'PGRST116') throw balanceError;
+    if (balanceError) throw balanceError;
     
     return { 
       transaction: data, 

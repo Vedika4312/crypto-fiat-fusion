@@ -5,14 +5,17 @@ import {
   Transaction, 
   getTransactions, 
   getUserBalances,
-  subscribeToTransactions
+  subscribeToTransactions,
+  updateUserBalance
 } from '@/services/transactionService';
 import { useToast } from '@/hooks/use-toast';
 
-interface Balance {
+interface UserBalance {
+  id: string;
   user_id: string;
   currency: string;
   balance: number;
+  last_updated: Date;
 }
 
 export function useTransactions() {
@@ -41,7 +44,7 @@ export function useTransactions() {
       if (balancesResponse.data) {
         // Convert balance array to a record for easier access
         const balanceRecord: Record<string, number> = {};
-        balancesResponse.data.forEach((balance: Balance) => {
+        balancesResponse.data.forEach((balance: UserBalance) => {
           balanceRecord[balance.currency] = Number(balance.balance);
         });
         
@@ -99,29 +102,16 @@ export function useTransactions() {
           });
         }
         
-        // Update balances
-        if (transaction.status === 'completed') {
-          setBalances(prevBalances => {
-            const currency = transaction.currency;
-            const prevBalance = prevBalances[currency] || 0;
-            
-            if ((transaction.type === 'receive' || transaction.type === 'admin_deposit') && 
-                transaction.user_id === user.id) {
-              return {
-                ...prevBalances,
-                [currency]: prevBalance + Number(transaction.amount)
-              };
-            } else if ((transaction.type === 'send' || transaction.type === 'admin_withdrawal') && 
-                       transaction.user_id === user.id) {
-              return {
-                ...prevBalances,
-                [currency]: prevBalance - Number(transaction.amount)
-              };
-            }
-            
-            return prevBalances;
-          });
-        }
+        // Refresh balances after a new transaction
+        getUserBalances().then(response => {
+          if (response.data) {
+            const balanceRecord: Record<string, number> = {};
+            response.data.forEach((balance: UserBalance) => {
+              balanceRecord[balance.currency] = Number(balance.balance);
+            });
+            setBalances(balanceRecord);
+          }
+        });
       }
     });
     
@@ -147,7 +137,7 @@ export function useTransactions() {
       
       if (balancesResponse.data) {
         const balanceRecord: Record<string, number> = {};
-        balancesResponse.data.forEach((balance: Balance) => {
+        balancesResponse.data.forEach((balance: UserBalance) => {
           balanceRecord[balance.currency] = Number(balance.balance);
         });
         
