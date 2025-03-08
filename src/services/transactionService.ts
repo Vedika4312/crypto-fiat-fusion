@@ -39,38 +39,18 @@ export const sendPayment = async (transactionData: TransactionPayload) => {
     
     if (!user) throw new Error('User not authenticated');
     
-    // Check if recipient exists
-    const { data: recipientExists, error: recipientError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', transactionData.recipient_id)
-      .single();
-    
-    if (recipientError || !recipientExists) throw new Error('Recipient not found');
-    
-    // Check if sender has sufficient balance
-    const { data: senderBalance, error: balanceError } = await supabase
-      .from('user_balances')
-      .select('balance')
-      .eq('user_id', user.id)
-      .eq('currency', transactionData.currency)
-      .single();
-    
-    if (balanceError) throw new Error('Failed to fetch your balance');
-    
-    if (!senderBalance || Number(senderBalance.balance) < transactionData.amount) {
-      throw new Error(`Insufficient balance. You need ${transactionData.amount} ${transactionData.currency} but only have ${senderBalance?.balance || 0}`);
-    }
-    
     // Start a transaction using RPC to ensure data consistency
-    const { data: transaction, error: transactionError } = await supabase.rpc('create_transaction', {
-      p_sender_id: user.id,
-      p_recipient_id: transactionData.recipient_id,
-      p_amount: transactionData.amount,
-      p_currency: transactionData.currency,
-      p_is_crypto: transactionData.is_crypto,
-      p_description: transactionData.description || 'Payment'
-    });
+    const { data: transaction, error: transactionError } = await supabase.rpc(
+      'create_transaction', 
+      {
+        p_sender_id: user.id,
+        p_recipient_id: transactionData.recipient_id,
+        p_amount: transactionData.amount,
+        p_currency: transactionData.currency,
+        p_is_crypto: transactionData.is_crypto,
+        p_description: transactionData.description || 'Payment'
+      }
+    );
     
     if (transactionError) throw transactionError;
     
