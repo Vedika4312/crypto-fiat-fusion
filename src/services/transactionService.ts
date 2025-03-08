@@ -167,18 +167,22 @@ export const updateUserBalance = async (userId: string, currency: string, amount
 
 // Function to subscribe to transaction updates
 export const subscribeToTransactions = (callback: (transaction: Transaction) => void) => {
-  // Use the synchronous method to get session data
-  const { data } = supabase.auth.getSession();
+  let userId: string | undefined;
   
-  // Extract user from session if it exists
-  const user = data?.session?.user;
+  try {
+    // Get the current session synchronously - proper destructuring to avoid TypeScript errors
+    const { data: { session } } = supabase.auth.getSession();
+    
+    // Extract user from session if it exists
+    userId = session?.user?.id;
+  } catch (error) {
+    console.error('Error getting user session:', error);
+  }
   
-  if (!user) {
+  if (!userId) {
     console.error('User not authenticated for transaction subscription');
     return () => {};
   }
-  
-  const userId = user.id;
   
   const channel = supabase
     .channel('public:transactions')

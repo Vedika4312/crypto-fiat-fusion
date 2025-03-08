@@ -13,15 +13,29 @@ import { sendPayment } from '@/services/transactionService';
 import { useAuth } from '@/context/AuthContext';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 const sendSchema = z.object({
   recipient: z.string().min(1, { message: 'Recipient ID is required' }),
   amount: z.coerce.number().positive({ message: 'Amount must be greater than 0' }),
+  currency: z.string().min(1, { message: 'Currency is required' }),
   description: z.string().optional(),
 });
 
+const FIAT_CURRENCIES = [
+  { value: 'USD', label: 'US Dollar ($)', symbol: '$' },
+  { value: 'EUR', label: 'Euro (€)', symbol: '€' }
+];
+
+const CRYPTO_CURRENCIES = [
+  { value: 'BTC', label: 'Bitcoin (BTC)', symbol: '₿' },
+  { value: 'ETH', label: 'Ethereum (ETH)', symbol: 'Ξ' }
+];
+
 const SendForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const { user } = useAuth();
   const { balances, refetch } = useTransactions();
   const { toast } = useToast();
@@ -31,9 +45,27 @@ const SendForm = () => {
     defaultValues: {
       recipient: '',
       amount: undefined,
+      currency: 'USD',
       description: '',
     },
   });
+
+  // Get currency symbol for input prefix
+  const getCurrencySymbol = (currency: string) => {
+    const fiatCurrency = FIAT_CURRENCIES.find(c => c.value === currency);
+    if (fiatCurrency) return fiatCurrency.symbol;
+    
+    const cryptoCurrency = CRYPTO_CURRENCIES.find(c => c.value === currency);
+    if (cryptoCurrency) return cryptoCurrency.symbol;
+    
+    return '$'; // Default
+  };
+
+  // Handle currency change
+  const handleCurrencyChange = (value: string) => {
+    setSelectedCurrency(value);
+    form.setValue('currency', value);
+  };
 
   const onSubmit = async (values: z.infer<typeof sendSchema>) => {
     try {
@@ -60,22 +92,25 @@ const SendForm = () => {
       }
       
       // Check if user has sufficient balance
-      const currentBalance = balances?.USD || 0;
+      const currentBalance = balances?.[values.currency] || 0;
       if (currentBalance < values.amount) {
         toast({
           title: "Insufficient Balance",
-          description: `You need ${values.amount} USD but only have ${currentBalance} USD`,
+          description: `You need ${values.amount} ${values.currency} but only have ${currentBalance} ${values.currency}`,
           variant: "destructive",
         });
         return;
       }
       
+      // Check if it's a crypto currency
+      const isCrypto = ['BTC', 'ETH'].includes(values.currency);
+      
       // Send the payment
       const { data, error } = await sendPayment({
         recipient_id: values.recipient,
         amount: values.amount,
-        currency: 'USD',
-        is_crypto: false,
+        currency: values.currency,
+        is_crypto: isCrypto,
         description: values.description || 'Payment',
       });
       
@@ -86,7 +121,7 @@ const SendForm = () => {
       // Success message and refresh balances
       toast({
         title: "Payment Successful!",
-        description: `Sent ${values.amount} USD to ${values.recipient}`,
+        description: `Sent ${values.amount} ${values.currency} to ${values.recipient}`,
         variant: "default",
       });
       
@@ -94,7 +129,12 @@ const SendForm = () => {
       refetch();
       
       // Reset form
-      form.reset();
+      form.reset({
+        recipient: '',
+        amount: undefined,
+        currency: selectedCurrency,
+        description: '',
+      });
     } catch (error: any) {
       console.error('Payment error:', error);
       toast({
@@ -136,34 +176,64 @@ const SendForm = () => {
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount (USD)</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <div className="absolute left-3 inset-y-0 flex items-center pointer-events-none">
-                            $
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Currency</FormLabel>
+                        <Select 
+                          onValueChange={(value) => handleCurrencyChange(value)} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select currency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {FIAT_CURRENCIES.map((currency) => (
+                              <SelectItem key={currency.value} value={currency.value}>
+                                {currency.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <div className="absolute left-3 inset-y-0 flex items-center pointer-events-none">
+                              {getCurrencySymbol(selectedCurrency)}
+                            </div>
+                            <Input 
+                              type="number" 
+                              placeholder="0.00" 
+                              step="0.01" 
+                              className="pl-7" 
+                              {...field} 
+                              max={balances?.[selectedCurrency] || 0}
+                            />
                           </div>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            step="0.01" 
-                            className="pl-7" 
-                            {...field} 
-                            max={balances?.USD || 0}
-                          />
-                        </div>
-                      </FormControl>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Available balance: ${balances?.USD || 0}
-                      </p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Available: {formatCurrency(balances?.[selectedCurrency] || 0, selectedCurrency)}
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 
                 <FormField
                   control={form.control}
@@ -201,18 +271,108 @@ const SendForm = () => {
           </TabsContent>
           
           <TabsContent value="crypto" className="mt-4">
-            <div className="space-y-6">
-              <div className="rounded-lg border p-4 text-center text-muted-foreground">
-                <p>Cryptocurrency sending functionality coming soon!</p>
-              </div>
-              
-              <Button variant="outline" className="w-full" disabled>
-                <div className="flex items-center">
-                  <ArrowRight className="mr-2 h-4 w-4" />
-                  Preview Crypto Sending
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="recipient"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recipient ID or Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter recipient's User ID or crypto address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Currency</FormLabel>
+                        <Select 
+                          onValueChange={(value) => handleCurrencyChange(value)} 
+                          defaultValue="BTC"
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select currency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {CRYPTO_CURRENCIES.map((currency) => (
+                              <SelectItem key={currency.value} value={currency.value}>
+                                {currency.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="0.00000000" 
+                            step="0.00000001" 
+                            {...field} 
+                            max={balances?.[selectedCurrency] || 0}
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Available: {balances?.[selectedCurrency] || 0} {selectedCurrency}
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              </Button>
-            </div>
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="What's this payment for?" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                      Processing...
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <Send className="mr-2 h-4 w-4" /> 
+                      Send {selectedCurrency}
+                    </div>
+                  )}
+                </Button>
+              </form>
+            </Form>
           </TabsContent>
         </Tabs>
       </CardContent>
