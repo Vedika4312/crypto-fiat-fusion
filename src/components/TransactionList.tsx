@@ -5,6 +5,7 @@ import { formatCurrency, formatCrypto } from '@/utils/formatCurrency';
 import { ArrowDown, ArrowUp, RefreshCw, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Transaction } from '@/services/transactionService';
+import { useAuth } from '@/context/AuthContext';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -13,6 +14,15 @@ interface TransactionListProps {
 }
 
 const TransactionList = ({ transactions, isLoading = false, className }: TransactionListProps) => {
+  const { user } = useAuth();
+  
+  // Filter transactions to only show the current user's
+  const userTransactions = user ? transactions.filter(transaction => 
+    transaction.user_id === user.id || 
+    transaction.recipient_id === user.id || 
+    transaction.sender_id === user.id
+  ) : [];
+  
   if (isLoading) {
     return (
       <Card className={className}>
@@ -99,9 +109,9 @@ const TransactionList = ({ transactions, isLoading = false, className }: Transac
 
   const getTransactionDescription = (transaction: Transaction) => {
     if (transaction.type === 'send') {
-      return 'Sent to User';
+      return transaction.description || 'Sent to User';
     } else if (transaction.type === 'receive') {
-      return 'Received from User';
+      return transaction.description || 'Received from User';
     } else {
       return transaction.description || 'Converted currency';
     }
@@ -114,7 +124,7 @@ const TransactionList = ({ transactions, isLoading = false, className }: Transac
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y">
-          {transactions.map((transaction) => (
+          {userTransactions.map((transaction) => (
             <div 
               key={transaction.id} 
               className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors"

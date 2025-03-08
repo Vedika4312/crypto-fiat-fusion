@@ -8,11 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import { ArrowRight, Send } from 'lucide-react';
 import { sendPayment } from '@/services/transactionService';
 import { useAuth } from '@/context/AuthContext';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useToast } from '@/hooks/use-toast';
 
 const sendSchema = z.object({
   recipient: z.string().min(1, { message: 'Recipient ID is required' }),
@@ -24,6 +24,7 @@ const SendForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { balances, refetch } = useTransactions();
+  const { toast } = useToast();
   
   const form = useForm<z.infer<typeof sendSchema>>({
     resolver: zodResolver(sendSchema),
@@ -40,21 +41,31 @@ const SendForm = () => {
       
       // Make sure user is authenticated
       if (!user) {
-        toast.error('You must be logged in to send payments');
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to send payments",
+          variant: "destructive",
+        });
         return;
       }
       
       // Check if recipient is the same as sender
       if (values.recipient === user.id) {
-        toast.error('You cannot send payments to yourself');
+        toast({
+          title: "Invalid Recipient",
+          description: "You cannot send payments to yourself",
+          variant: "destructive",
+        });
         return;
       }
       
       // Check if user has sufficient balance
       const currentBalance = balances?.USD || 0;
       if (currentBalance < values.amount) {
-        toast.error('Insufficient balance', {
+        toast({
+          title: "Insufficient Balance",
           description: `You need ${values.amount} USD but only have ${currentBalance} USD`,
+          variant: "destructive",
         });
         return;
       }
@@ -73,8 +84,10 @@ const SendForm = () => {
       }
       
       // Success message and refresh balances
-      toast.success('Payment sent successfully!', {
+      toast({
+        title: "Payment Successful!",
         description: `Sent ${values.amount} USD to ${values.recipient}`,
+        variant: "default",
       });
       
       // Refresh transactions and balances
@@ -84,8 +97,10 @@ const SendForm = () => {
       form.reset();
     } catch (error: any) {
       console.error('Payment error:', error);
-      toast.error('Failed to send payment', {
+      toast({
+        title: "Payment Failed",
         description: error.message || 'Please try again later',
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);

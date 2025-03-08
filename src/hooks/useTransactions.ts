@@ -37,7 +37,13 @@ export function useTransactions() {
       ]);
       
       if (transactionsResponse.data) {
-        setTransactions(transactionsResponse.data);
+        // Filter transactions to only show those related to the current user
+        const userTransactions = transactionsResponse.data.filter(transaction => 
+          transaction.user_id === user.id || 
+          transaction.recipient_id === user.id || 
+          transaction.sender_id === user.id
+        );
+        setTransactions(userTransactions);
       }
       
       if (balancesResponse.data) {
@@ -107,6 +113,7 @@ export function useTransactions() {
           toast({
             title: "Payment Received!",
             description: `You received ${transaction.amount} ${transaction.currency}`,
+            variant: "default",
           });
           
           // Refresh balances to show updated amount
