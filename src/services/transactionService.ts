@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Transaction {
@@ -167,6 +168,15 @@ export const updateUserBalance = async (userId: string, currency: string, amount
 
 // Function to subscribe to transaction updates
 export const subscribeToTransactions = (callback: (transaction: Transaction) => void) => {
+  const { data: { user } } = supabase.auth.getUser();
+  
+  if (!user) {
+    console.error('User not authenticated for transaction subscription');
+    return () => {};
+  }
+  
+  const userId = user.id;
+  
   const channel = supabase
     .channel('public:transactions')
     .on('postgres_changes', 
@@ -182,7 +192,15 @@ export const subscribeToTransactions = (callback: (transaction: Transaction) => 
           created_at: new Date(payload.new.created_at),
           updated_at: new Date(payload.new.updated_at),
         };
-        callback(transaction);
+        
+        // Only process transactions related to the current user
+        if (
+          transaction.user_id === userId || 
+          transaction.recipient_id === userId || 
+          transaction.sender_id === userId
+        ) {
+          callback(transaction);
+        }
       }
     )
     .subscribe();
