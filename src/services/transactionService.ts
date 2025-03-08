@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Transaction {
@@ -168,7 +167,9 @@ export const updateUserBalance = async (userId: string, currency: string, amount
 
 // Function to subscribe to transaction updates
 export const subscribeToTransactions = (callback: (transaction: Transaction) => void) => {
-  const { data: { user } } = supabase.auth.getUser();
+  const { data } = supabase.auth.getSession();
+  const session = data.session;
+  const user = session?.user;
   
   if (!user) {
     console.error('User not authenticated for transaction subscription');
