@@ -3,8 +3,25 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Wallet, Send, ArrowDownToLine, RefreshCw, Home, LogOut } from 'lucide-react';
+import { 
+  Wallet, 
+  Send, 
+  ArrowDownToLine, 
+  RefreshCw, 
+  Home, 
+  LogOut, 
+  User 
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface NavItem {
   label: string;
@@ -55,6 +72,12 @@ const Navbar = () => {
 
   const isLandingPage = location.pathname === '/';
   const isAuthPage = location.pathname === '/auth';
+
+  // Get user initial for avatar
+  const getUserInitial = () => {
+    if (!user?.email) return 'U';
+    return user.email.charAt(0).toUpperCase();
+  };
 
   // Don't show navbar on auth page
   if (isAuthPage) {
@@ -111,10 +134,32 @@ const Navbar = () => {
                 <Wallet className="mr-2 h-4 w-4" />
                 <span className="font-medium">ID: {user.id.substring(0, 7).toUpperCase()}</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={signOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign out
-              </Button>
+              
+              {/* Profile Dropdown Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="rounded-full p-0 w-10 h-10">
+                    <Avatar>
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {getUserInitial()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">{user.email}</p>
+                    <p className="text-xs text-muted-foreground mt-1">User ID: {user.id.substring(0, 10)}...</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="text-destructive cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             <Button asChild>
