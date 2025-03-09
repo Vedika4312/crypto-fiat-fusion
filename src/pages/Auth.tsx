@@ -15,6 +15,7 @@ const Auth = () => {
   const { user, signIn, signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if already logged in
@@ -23,10 +24,19 @@ const Auth = () => {
   }
 
   const handleAuth = async (action: 'signin' | 'signup') => {
-    if (!email || !password) {
+    if (action === 'signin' && (!email || !password)) {
       toast({
         title: "Required fields missing",
         description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (action === 'signup' && (!email || !password || !username)) {
+      toast({
+        title: "Required fields missing",
+        description: "Please fill in all fields including username",
         variant: "destructive",
       });
       return;
@@ -37,7 +47,7 @@ const Auth = () => {
     try {
       const { error } = action === 'signin' 
         ? await signIn(email, password)
-        : await signUp(email, password);
+        : await signUp(email, password, username);
       
       if (error) {
         console.error("Auth error:", error);
@@ -147,6 +157,17 @@ const Auth = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-username">Username</Label>
+                  <Input
+                    id="signup-username"
+                    type="text"
+                    placeholder="johndoe"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
                   />
                 </div>
                 <div className="space-y-2">

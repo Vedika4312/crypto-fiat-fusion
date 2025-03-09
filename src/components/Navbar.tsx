@@ -32,7 +32,7 @@ interface NavItem {
 const Navbar = () => {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, username, signOut } = useAuth();
 
   // Handle scroll effect for transparent navbar
   useEffect(() => {
@@ -75,8 +75,9 @@ const Navbar = () => {
 
   // Get user initial for avatar
   const getUserInitial = () => {
-    if (!user?.email) return 'U';
-    return user.email.charAt(0).toUpperCase();
+    if (username) return username.charAt(0).toUpperCase();
+    if (user?.email) return user.email.charAt(0).toUpperCase();
+    return 'U';
   };
 
   // Don't show navbar on auth page
@@ -150,6 +151,7 @@ const Navbar = () => {
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="px-2 py-1.5">
+                    {username && <p className="text-sm font-medium">{username}</p>}
                     <p className="text-sm font-medium">{user.email}</p>
                     <p className="text-xs text-muted-foreground mt-1">User ID: {user.id.substring(0, 10)}...</p>
                   </div>
