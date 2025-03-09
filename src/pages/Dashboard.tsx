@@ -8,9 +8,42 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowDownToLine, ArrowUpToLine, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTransactions } from '@/hooks/useTransactions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Dashboard = () => {
-  const { transactions, balances, loading } = useTransactions();
+  const { transactions, balances, loading, refetch } = useTransactions();
+
+  // Page level loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        
+        <main className="pt-24 pb-16 animate-fade-in">
+          <div className="container app-container">
+            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+            <p className="text-muted-foreground mb-8">Loading your Fusion Pay account...</p>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Balance Card Skeleton */}
+              <div className="lg:col-span-2">
+                <Skeleton className="h-[200px] w-full" />
+              </div>
+              
+              {/* Quick Actions Skeleton */}
+              <Skeleton className="h-[200px] w-full" />
+              
+              {/* Balance Table Skeleton */}
+              <Skeleton className="h-[300px] w-full lg:col-span-3" />
+              
+              {/* Transaction History Skeleton */}
+              <Skeleton className="h-[400px] w-full lg:col-span-3" />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -18,7 +51,18 @@ const Dashboard = () => {
       
       <main className="pt-24 pb-16 animate-fade-in">
         <div className="container app-container">
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <div className="flex justify-between items-center mb-2">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => refetch()} 
+              className="flex items-center gap-1"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
           <p className="text-muted-foreground mb-8">Welcome back to your Fusion Pay account</p>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -26,7 +70,7 @@ const Dashboard = () => {
             <BalanceCard 
               className="lg:col-span-2" 
               balances={balances}
-              isLoading={loading}
+              isLoading={false}
             />
             
             {/* Quick Actions */}
@@ -58,17 +102,17 @@ const Dashboard = () => {
               </CardContent>
             </Card>
             
-            {/* Balance Table - Added new component */}
+            {/* Balance Table */}
             <BalanceTable 
               balances={balances}
-              isLoading={loading}
+              isLoading={false}
               className="lg:col-span-3"
             />
             
             {/* Transaction History */}
             <TransactionList 
               transactions={transactions} 
-              isLoading={loading}
+              isLoading={false}
               className="lg:col-span-3"
             />
           </div>

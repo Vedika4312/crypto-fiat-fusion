@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -26,7 +25,10 @@ export function useTransactions() {
 
   // Function to fetch data
   const fetchData = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     
@@ -79,13 +81,19 @@ export function useTransactions() {
         variant: "destructive",
       });
     } finally {
+      // Make sure loading is set to false no matter what happens
       setLoading(false);
     }
   };
 
   // Fetch transactions and balances
   useEffect(() => {
-    fetchData();
+    // Set an initial timeout to handle very quick loading flashes
+    const loadingTimeout = setTimeout(() => {
+      fetchData();
+    }, 300); // Short delay to prevent loading flash
+    
+    return () => clearTimeout(loadingTimeout);
   }, [user, toast]);
 
   // Subscribe to real-time updates
