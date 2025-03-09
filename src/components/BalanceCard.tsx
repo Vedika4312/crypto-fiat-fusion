@@ -26,6 +26,17 @@ const BalanceCard = ({ balances, isLoading = false, className }: BalanceCardProp
   const btcBalance = balances?.BTC || 0;
   const ethBalance = balances?.ETH || 0;
 
+  // Calculate combined totals (using simple conversion rates for demonstration)
+  // In a real app, these would be fetched from an exchange rate API
+  const eurToUsd = 1.1; // 1 EUR = 1.1 USD
+  const btcToUsd = 30000; // 1 BTC = 30,000 USD (example value)
+  const ethToUsd = 2000; // 1 ETH = 2,000 USD (example value)
+  
+  const totalUsdValue = usdBalance + 
+                        (eurBalance * eurToUsd) + 
+                        (btcBalance * btcToUsd) + 
+                        (ethBalance * ethToUsd);
+
   // Mock percentage change (you could calculate this from transaction history)
   const fiatChange = 2.4;
   const cryptoChange = -1.2;
@@ -65,6 +76,26 @@ const BalanceCard = ({ balances, isLoading = false, className }: BalanceCardProp
         </div>
       </CardHeader>
       <CardContent className="p-6">
+        <div className="space-y-2 mb-6">
+          <div className="text-sm text-muted-foreground">Total Balance (USD equivalent)</div>
+          <div className="flex items-center gap-2">
+            <div className="text-3xl font-bold">
+              {isBalanceHidden ? '••••••' : formatCurrency(totalUsdValue)}
+            </div>
+            <div className={cn(
+              "text-sm font-medium flex items-center",
+              fiatChange >= 0 ? "text-green-500" : "text-red-500"
+            )}>
+              {fiatChange >= 0 ? (
+                <TrendingUp className="mr-1 h-3 w-3" />
+              ) : (
+                <TrendingDown className="mr-1 h-3 w-3" />
+              )}
+              {Math.abs(fiatChange)}%
+            </div>
+          </div>
+        </div>
+        
         <Tabs defaultValue="fiat" className="space-y-4">
           <TabsList className="grid grid-cols-2">
             <TabsTrigger value="fiat">Fiat</TabsTrigger>
@@ -72,26 +103,6 @@ const BalanceCard = ({ balances, isLoading = false, className }: BalanceCardProp
           </TabsList>
           
           <TabsContent value="fiat" className="space-y-4">
-            <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Total Balance (USD)</div>
-              <div className="flex items-center gap-2">
-                <div className="text-3xl font-bold">
-                  {isBalanceHidden ? '••••••' : formatCurrency(usdBalance)}
-                </div>
-                <div className={cn(
-                  "text-sm font-medium flex items-center",
-                  fiatChange >= 0 ? "text-green-500" : "text-red-500"
-                )}>
-                  {fiatChange >= 0 ? (
-                    <TrendingUp className="mr-1 h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="mr-1 h-3 w-3" />
-                  )}
-                  {Math.abs(fiatChange)}%
-                </div>
-              </div>
-            </div>
-            
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-primary/5 rounded-lg p-3">
                 <div className="text-xs text-muted-foreground mb-1">USD</div>
@@ -109,26 +120,6 @@ const BalanceCard = ({ balances, isLoading = false, className }: BalanceCardProp
           </TabsContent>
           
           <TabsContent value="crypto" className="space-y-4">
-            <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Total (BTC)</div>
-              <div className="flex items-center gap-2">
-                <div className="text-3xl font-bold">
-                  {isBalanceHidden ? '••••••' : formatCrypto(btcBalance)}
-                </div>
-                <div className={cn(
-                  "text-sm font-medium flex items-center",
-                  cryptoChange >= 0 ? "text-green-500" : "text-red-500"
-                )}>
-                  {cryptoChange >= 0 ? (
-                    <TrendingUp className="mr-1 h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="mr-1 h-3 w-3" />
-                  )}
-                  {Math.abs(cryptoChange)}%
-                </div>
-              </div>
-            </div>
-            
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-primary/5 rounded-lg p-3">
                 <div className="text-xs text-muted-foreground mb-1">BTC</div>
