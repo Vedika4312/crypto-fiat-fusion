@@ -170,10 +170,8 @@ export const subscribeToTransactions = (callback: (transaction: Transaction) => 
   let userId: string | undefined;
   
   try {
-    // Get the current session synchronously - proper destructuring to avoid TypeScript errors
-    const { data: { session } } = supabase.auth.getSession();
-    
-    // Extract user from session if it exists
+    // Get the current user ID synchronously from the session
+    const session = supabase.auth.getSession().data?.session;
     userId = session?.user?.id;
   } catch (error) {
     console.error('Error getting user session:', error);
