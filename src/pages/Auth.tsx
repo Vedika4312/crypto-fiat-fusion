@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Wallet } from 'lucide-react';
 import { adminAddFunds } from '@/services/transactionService';
 
@@ -16,7 +16,6 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   // Redirect if already logged in
   if (user) {
@@ -42,11 +41,7 @@ const Auth = () => {
       
       if (error) {
         console.error("Auth error:", error);
-        toast({
-          title: "Authentication failed",
-          description: error.message || "Please check your credentials and try again",
-          variant: "destructive",
-        });
+        // Toast notification is handled in AuthContext
       } else if (action === 'signup') {
         // Create initial balances for new users
         if (user) {
@@ -62,11 +57,6 @@ const Auth = () => {
             console.error("Failed to add initial funds:", fundError);
           }
         }
-        
-        toast({
-          title: "Account created!",
-          description: "Please check your email to confirm your account.",
-        });
       }
     } catch (error) {
       console.error("Unexpected auth error:", error);

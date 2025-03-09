@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface AuthContextProps {
   session: Session | null;
@@ -21,7 +21,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     // Get initial session
@@ -65,13 +64,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         
         navigate('/dashboard');
+        toast({
+          title: "Successfully signed in",
+          description: "Welcome back!",
+        });
       } else {
         console.error("Sign in error:", error);
+        toast({
+          title: "Sign in failed",
+          description: error.message || "Please check your credentials and try again",
+          variant: "destructive",
+        });
       }
       
       return { error };
     } catch (error) {
       console.error("Unexpected auth error during sign in:", error);
+      toast({
+        title: "Authentication error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
       return { error: error as Error };
     }
   };
@@ -94,11 +107,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // We'll navigate after email verification, not immediately
       } else {
         console.error("Sign up error:", error);
+        toast({
+          title: "Sign up failed",
+          description: error.message || "Could not create your account",
+          variant: "destructive",
+        });
       }
       
       return { error };
     } catch (error) {
       console.error("Unexpected auth error during sign up:", error);
+      toast({
+        title: "Sign up error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
       return { error: error as Error };
     }
   };
@@ -106,6 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out",
+      });
       navigate('/auth');
     } catch (error) {
       console.error("Sign out error:", error);
