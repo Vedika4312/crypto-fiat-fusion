@@ -107,12 +107,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      ensure_user_balances: {
-        Args: {
-          user_id: string
-        }
-        Returns: undefined
-      }
+      ensure_user_balances:
+        | {
+            Args: Record<PropertyKey, never>
+            Returns: undefined
+          }
+        | {
+            Args: {
+              user_id: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       [_ in never]: never

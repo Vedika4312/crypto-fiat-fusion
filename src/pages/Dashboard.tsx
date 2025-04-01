@@ -17,14 +17,14 @@ const Dashboard = () => {
   
   // Control initial loading to prevent flash
   useEffect(() => {
-    if (!loading) {
-      // Add a small delay to ensure content is properly loaded
-      const timer = setTimeout(() => {
+    // Set a timeout to make sure we don't show loading state for very quick responses
+    const initialLoadTimeout = setTimeout(() => {
+      if (!loading) {
         setIsInitialLoading(false);
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
+      }
+    }, 500);
+    
+    return () => clearTimeout(initialLoadTimeout);
   }, [loading]);
 
   // Show a loading spinner while initially loading
@@ -36,8 +36,11 @@ const Dashboard = () => {
         <main className="pt-24 pb-16 animate-fade-in">
           <div className="container app-container">
             <div className="flex flex-col items-center justify-center h-[70vh]">
-              <Loader className="h-12 w-12 text-primary animate-spin mb-4" />
-              <h2 className="text-xl font-medium text-muted-foreground">Loading your dashboard...</h2>
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                <Loader className="h-10 w-10 text-primary animate-spin" />
+              </div>
+              <h2 className="text-xl font-medium text-muted-foreground mb-2">Loading your dashboard...</h2>
+              <p className="text-sm text-muted-foreground">Please wait while we fetch your data</p>
             </div>
           </div>
         </main>

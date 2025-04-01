@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -33,10 +34,19 @@ export function useTransactions() {
     setLoading(true);
     
     try {
+      // Set a minimum loading time to prevent flash
+      const startTime = Date.now();
+      
       const [transactionsResponse, balancesResponse] = await Promise.all([
         getTransactions(),
         getUserBalances()
       ]);
+      
+      // Ensure minimum loading time of 300ms to prevent UI flash
+      const loadTime = Date.now() - startTime;
+      if (loadTime < 300) {
+        await new Promise(resolve => setTimeout(resolve, 300 - loadTime));
+      }
       
       if (transactionsResponse.data) {
         // Filter transactions to only show those related to the current user
@@ -88,12 +98,13 @@ export function useTransactions() {
 
   // Fetch transactions and balances
   useEffect(() => {
-    // Set an initial timeout to handle very quick loading flashes
-    const loadingTimeout = setTimeout(() => {
-      fetchData();
-    }, 300); // Short delay to prevent loading flash
+    // Make sure we're not trying to fetch data without a user
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     
-    return () => clearTimeout(loadingTimeout);
+    fetchData();
   }, [user, toast]);
 
   // Subscribe to real-time updates
