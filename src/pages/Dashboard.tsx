@@ -5,7 +5,7 @@ import BalanceTable from '@/components/BalanceTable';
 import TransactionList from '@/components/TransactionList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowDownToLine, ArrowUpToLine, RefreshCw } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpToLine, RefreshCw, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTransactions } from '@/hooks/useTransactions';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -97,6 +97,13 @@ const Dashboard = () => {
                   <Link to="/convert">
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Convert Currency
+                  </Link>
+                </Button>
+
+                <Button asChild variant="outline" className="justify-start">
+                  <Link to="/virtual-card">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Virtual Cards
                   </Link>
                 </Button>
               </CardContent>

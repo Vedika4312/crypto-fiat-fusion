@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Send from './pages/Send';
 import Receive from './pages/Receive';
 import Convert from './pages/Convert';
+import VirtualCard from './pages/VirtualCard';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -33,6 +34,7 @@ function App() {
           <Route path="/send" element={<ProtectedRoute><Send /></ProtectedRoute>} />
           <Route path="/receive" element={<ProtectedRoute><Receive /></ProtectedRoute>} />
           <Route path="/convert" element={<ProtectedRoute><Convert /></ProtectedRoute>} />
+          <Route path="/virtual-card" element={<ProtectedRoute><VirtualCard /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </Router>
