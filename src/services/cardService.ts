@@ -143,14 +143,13 @@ export const getVirtualCards = async () => {
     
     if (!user) throw new Error('User not authenticated');
     
-    // Use the supabase REST API instead of direct fetch
-    // This approach handles auth behind the scenes and avoids accessing protected properties
+    // Use generic fetch with the supabase client
+    // Cast the response type to VirtualCard[] to resolve the TypeScript issue
     const { data: cardsData, error: cardsError } = await supabase
-      .from('virtual_cards')
+      .from('virtual_cards' as any)
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .returns<VirtualCard[]>();
+      .order('created_at', { ascending: false });
     
     if (cardsError) throw cardsError;
     
@@ -161,17 +160,16 @@ export const getVirtualCards = async () => {
     
     // Separately fetch transactions for each card
     const cardsWithTransactions = await Promise.all(
-      cardsData.map(async (card) => {
+      (cardsData as VirtualCard[]).map(async (card) => {
         const { data: txData, error: txError } = await supabase
-          .from('card_transactions')
+          .from('card_transactions' as any)
           .select('*')
           .eq('card_id', card.id)
-          .order('created_at', { ascending: false })
-          .returns<Transaction[]>();
+          .order('created_at', { ascending: false });
         
         return {
           ...card,
-          transactions: txError || !txData ? [] : txData.sort((a, b) => 
+          transactions: txError || !txData ? [] : (txData as Transaction[]).sort((a, b) => 
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )
         };
