@@ -143,39 +143,50 @@ export const getVirtualCards = async () => {
     
     if (!user) throw new Error('User not authenticated');
     
-    // Use a raw REST-like approach to avoid type issues
-    // Using 'from' with explicit typing to handle tables not in generated types
-    const { data: cardsData, error: cardsError } = await supabase
-      .from('virtual_cards')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }) as { 
-        data: VirtualCard[] | null; 
-        error: any 
-      };
+    // Use the generic fetch approach with explicit typing
+    // This avoids TypeScript issues with tables not in our database types
+    const response = await fetch(`${supabase.supabaseUrl}/rest/v1/virtual_cards?user_id=eq.${user.id}&order=created_at.desc`, {
+      headers: {
+        'apikey': supabase.supabaseKey,
+        'Authorization': `Bearer ${supabase.supabaseKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
     
-    if (cardsError) throw cardsError;
+    if (!response.ok) {
+      throw new Error(`Failed to fetch virtual cards: ${response.statusText}`);
+    }
+    
+    const cardsData = await response.json() as VirtualCard[];
     
     // If no cards, return empty array
-    if (!cardsData) {
+    if (!cardsData || cardsData.length === 0) {
       return { data: [], error: null };
     }
     
-    // Separately fetch transactions for each card
+    // Separately fetch transactions for each card using the same approach
     const cardsWithTransactions = await Promise.all(
       cardsData.map(async (card) => {
-        const { data: txData, error: txError } = await supabase
-          .from('card_transactions')
-          .select('*')
-          .eq('card_id', card.id)
-          .order('created_at', { ascending: false }) as {
-            data: Transaction[] | null;
-            error: any;
+        const txResponse = await fetch(`${supabase.supabaseUrl}/rest/v1/card_transactions?card_id=eq.${card.id}&order=created_at.desc`, {
+          headers: {
+            'apikey': supabase.supabaseKey,
+            'Authorization': `Bearer ${supabase.supabaseKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!txResponse.ok) {
+          return {
+            ...card,
+            transactions: []
           };
+        }
+        
+        const txData = await txResponse.json() as Transaction[];
         
         return {
           ...card,
-          transactions: txError || !txData ? [] : txData.sort((a, b) => 
+          transactions: txData.sort((a, b) => 
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )
         };
@@ -209,10 +220,17 @@ export const subscribeToCardTransactions = (callback: (cardId: string) => void) 
             schema: 'public',
             table: 'card_transactions',
           },
-          (payload: { new: Record<string, any> | null }) => {
-            // Get the card_id from the payload using type-safe check
-            if (payload.new && 'card_id' in payload.new) {
-              const cardId = payload.new.card_id as string;
+          (payload) => {
+            // Use type safety with unknown payload
+            if (payload && 
+                typeof payload === 'object' && 
+                'new' in payload && 
+                payload.new && 
+                typeof payload.new === 'object' && 
+                'card_id' in payload.new && 
+                typeof payload.new.card_id === 'string') {
+              
+              const cardId = payload.new.card_id;
               
               // Call the callback with the card ID
               if (cardId) {
