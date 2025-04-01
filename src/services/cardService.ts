@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Transaction } from '@/services/transactionService';
 
@@ -143,8 +142,8 @@ export const getVirtualCards = async () => {
     
     if (!user) throw new Error('User not authenticated');
     
-    // Use generic fetch with the supabase client
-    // Cast the response type to VirtualCard[] to resolve the TypeScript issue
+    // Use generic fetch with the supabase client and proper type assertions
+    // First cast to unknown, then to the expected type
     const { data: cardsData, error: cardsError } = await supabase
       .from('virtual_cards' as any)
       .select('*')
@@ -158,9 +157,12 @@ export const getVirtualCards = async () => {
       return { data: [], error: null };
     }
     
+    // Safely convert to VirtualCard[] with intermediate unknown cast
+    const typedCardsData = (cardsData as unknown) as VirtualCard[];
+    
     // Separately fetch transactions for each card
     const cardsWithTransactions = await Promise.all(
-      (cardsData as VirtualCard[]).map(async (card) => {
+      typedCardsData.map(async (card) => {
         const { data: txData, error: txError } = await supabase
           .from('card_transactions' as any)
           .select('*')
@@ -169,7 +171,7 @@ export const getVirtualCards = async () => {
         
         return {
           ...card,
-          transactions: txError || !txData ? [] : (txData as Transaction[]).sort((a, b) => 
+          transactions: txError || !txData ? [] : ((txData as unknown) as Transaction[]).sort((a, b) => 
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )
         };
