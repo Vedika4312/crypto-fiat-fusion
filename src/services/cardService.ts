@@ -143,27 +143,35 @@ export const getVirtualCards = async () => {
     
     if (!user) throw new Error('User not authenticated');
     
-    // Fetch the user's virtual cards
-    const { data, error } = await supabase
+    // Fetch the user's virtual cards via the REST API directly
+    // This avoids type issues with tables not in the database schema
+    const response = await supabase
       .from('virtual_cards')
-      .select(`
-        *,
-        transactions:card_transactions(*)
-      `)
+      .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (response.error) throw response.error;
     
-    // Format the data
-    const formattedData = data.map(card => ({
-      ...card,
-      transactions: card.transactions ? card.transactions.sort((a: any, b: any) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      ) : []
-    }));
+    // Separately fetch transactions for each card
+    const cardsWithTransactions = await Promise.all(
+      response.data.map(async (card) => {
+        const txResponse = await supabase
+          .from('card_transactions')
+          .select('*')
+          .eq('card_id', card.id)
+          .order('created_at', { ascending: false });
+        
+        return {
+          ...card,
+          transactions: txResponse.error ? [] : txResponse.data.sort((a, b) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          )
+        };
+      })
+    );
     
-    return { data: formattedData, error: null };
+    return { data: cardsWithTransactions, error: null };
   } catch (error) {
     console.error('Error fetching virtual cards:', error);
     return { data: null, error };
@@ -192,11 +200,13 @@ export const subscribeToCardTransactions = (callback: (cardId: string) => void) 
           },
           (payload) => {
             // Get the card_id from the payload
-            const cardId = payload.new?.card_id;
-            
-            // Call the callback with the card ID
-            if (cardId) {
-              callback(cardId);
+            if (payload.new && 'card_id' in payload.new) {
+              const cardId = payload.new.card_id as string;
+              
+              // Call the callback with the card ID
+              if (cardId) {
+                callback(cardId);
+              }
             }
           }
         )
