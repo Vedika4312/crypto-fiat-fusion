@@ -5,16 +5,48 @@ import BalanceTable from '@/components/BalanceTable';
 import TransactionList from '@/components/TransactionList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowDownToLine, ArrowUpToLine, RefreshCw, CreditCard } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpToLine, RefreshCw, CreditCard, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTransactions } from '@/hooks/useTransactions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState } from 'react';
 
 const Dashboard = () => {
   const { transactions, balances, loading, refetch } = useTransactions();
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  
+  // Control initial loading to prevent flash
+  useEffect(() => {
+    if (!loading) {
+      // Add a small delay to ensure content is properly loaded
+      const timer = setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
-  // Page level loading state
-  if (loading) {
+  // Show a loading spinner while initially loading
+  if (isInitialLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        
+        <main className="pt-24 pb-16 animate-fade-in">
+          <div className="container app-container">
+            <div className="flex flex-col items-center justify-center h-[70vh]">
+              <Loader className="h-12 w-12 text-primary animate-spin mb-4" />
+              <h2 className="text-xl font-medium text-muted-foreground">Loading your dashboard...</h2>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Skeleton loading state for when data is fetching but not on initial load
+  if (loading && !isInitialLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
