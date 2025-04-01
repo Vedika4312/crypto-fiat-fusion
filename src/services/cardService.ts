@@ -143,50 +143,35 @@ export const getVirtualCards = async () => {
     
     if (!user) throw new Error('User not authenticated');
     
-    // Use the generic fetch approach with explicit typing
-    // This avoids TypeScript issues with tables not in our database types
-    const response = await fetch(`${supabase.supabaseUrl}/rest/v1/virtual_cards?user_id=eq.${user.id}&order=created_at.desc`, {
-      headers: {
-        'apikey': supabase.supabaseKey,
-        'Authorization': `Bearer ${supabase.supabaseKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    // Use the supabase REST API instead of direct fetch
+    // This approach handles auth behind the scenes and avoids accessing protected properties
+    const { data: cardsData, error: cardsError } = await supabase
+      .from('virtual_cards')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .returns<VirtualCard[]>();
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch virtual cards: ${response.statusText}`);
-    }
-    
-    const cardsData = await response.json() as VirtualCard[];
+    if (cardsError) throw cardsError;
     
     // If no cards, return empty array
     if (!cardsData || cardsData.length === 0) {
       return { data: [], error: null };
     }
     
-    // Separately fetch transactions for each card using the same approach
+    // Separately fetch transactions for each card
     const cardsWithTransactions = await Promise.all(
       cardsData.map(async (card) => {
-        const txResponse = await fetch(`${supabase.supabaseUrl}/rest/v1/card_transactions?card_id=eq.${card.id}&order=created_at.desc`, {
-          headers: {
-            'apikey': supabase.supabaseKey,
-            'Authorization': `Bearer ${supabase.supabaseKey}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!txResponse.ok) {
-          return {
-            ...card,
-            transactions: []
-          };
-        }
-        
-        const txData = await txResponse.json() as Transaction[];
+        const { data: txData, error: txError } = await supabase
+          .from('card_transactions')
+          .select('*')
+          .eq('card_id', card.id)
+          .order('created_at', { ascending: false })
+          .returns<Transaction[]>();
         
         return {
           ...card,
-          transactions: txData.sort((a, b) => 
+          transactions: txError || !txData ? [] : txData.sort((a, b) => 
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )
         };
