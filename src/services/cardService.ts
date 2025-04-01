@@ -143,28 +143,39 @@ export const getVirtualCards = async () => {
     
     if (!user) throw new Error('User not authenticated');
     
-    // Fetch the user's virtual cards via the REST API directly
-    // This avoids type issues with tables not in the database schema
-    const response = await supabase
+    // Use a raw REST-like approach to avoid type issues
+    // Using 'from' with explicit typing to handle tables not in generated types
+    const { data: cardsData, error: cardsError } = await supabase
       .from('virtual_cards')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as { 
+        data: VirtualCard[] | null; 
+        error: any 
+      };
     
-    if (response.error) throw response.error;
+    if (cardsError) throw cardsError;
+    
+    // If no cards, return empty array
+    if (!cardsData) {
+      return { data: [], error: null };
+    }
     
     // Separately fetch transactions for each card
     const cardsWithTransactions = await Promise.all(
-      response.data.map(async (card) => {
-        const txResponse = await supabase
+      cardsData.map(async (card) => {
+        const { data: txData, error: txError } = await supabase
           .from('card_transactions')
           .select('*')
           .eq('card_id', card.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }) as {
+            data: Transaction[] | null;
+            error: any;
+          };
         
         return {
           ...card,
-          transactions: txResponse.error ? [] : txResponse.data.sort((a, b) => 
+          transactions: txError || !txData ? [] : txData.sort((a, b) => 
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )
         };
@@ -198,8 +209,8 @@ export const subscribeToCardTransactions = (callback: (cardId: string) => void) 
             schema: 'public',
             table: 'card_transactions',
           },
-          (payload) => {
-            // Get the card_id from the payload
+          (payload: { new: Record<string, any> | null }) => {
+            // Get the card_id from the payload using type-safe check
             if (payload.new && 'card_id' in payload.new) {
               const cardId = payload.new.card_id as string;
               
