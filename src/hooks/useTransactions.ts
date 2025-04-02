@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -18,6 +19,14 @@ export function useTransactions() {
 
   const fetchData = async () => {
     if (!user) {
+      // Set default empty states if no user
+      setTransactions([]);
+      setBalances({
+        USD: 0,
+        EUR: 0,
+        BTC: 0,
+        ETH: 0
+      });
       setLoading(false);
       return;
     }
@@ -32,11 +41,13 @@ export function useTransactions() {
         getUserBalances()
       ]);
       
+      // Ensure minimum loading time for better UX
       const loadTime = Date.now() - startTime;
       if (loadTime < 500) {
         await new Promise(resolve => setTimeout(resolve, 500 - loadTime));
       }
       
+      // Process transactions
       if (transactionsResponse.data) {
         const userTransactions = transactionsResponse.data.filter(transaction => 
           transaction.user_id === user.id || 
@@ -44,8 +55,11 @@ export function useTransactions() {
           transaction.sender_id === user.id
         );
         setTransactions(userTransactions);
+      } else {
+        setTransactions([]);
       }
       
+      // Process balances
       if (balancesResponse.data) {
         const balanceRecord: Record<string, number> = {};
         balancesResponse.data.forEach((balance: UserBalance) => {
@@ -70,6 +84,15 @@ export function useTransactions() {
       }
     } catch (error) {
       console.error('Error fetching transaction data:', error);
+      // Set default values if there's an error
+      setTransactions([]);
+      setBalances({
+        USD: 0,
+        EUR: 0,
+        BTC: 0,
+        ETH: 0
+      });
+      
       toast({
         title: "Failed to load data",
         description: "Please try refreshing the page",
@@ -80,15 +103,12 @@ export function useTransactions() {
     }
   };
 
+  // Fetch data on mount or when user changes
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    
     fetchData();
-  }, [user, toast]);
+  }, [user]);
 
+  // Subscribe to transaction updates
   useEffect(() => {
     if (!user) return;
     
