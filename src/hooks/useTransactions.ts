@@ -42,10 +42,10 @@ export function useTransactions() {
         getUserBalances()
       ]);
       
-      // Ensure minimum loading time of 300ms to prevent UI flash
+      // Ensure minimum loading time of 500ms to prevent UI flash
       const loadTime = Date.now() - startTime;
-      if (loadTime < 300) {
-        await new Promise(resolve => setTimeout(resolve, 300 - loadTime));
+      if (loadTime < 500) {
+        await new Promise(resolve => setTimeout(resolve, 500 - loadTime));
       }
       
       if (transactionsResponse.data) {

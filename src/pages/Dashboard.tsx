@@ -10,17 +10,20 @@ import { useTransactions } from '@/hooks/useTransactions';
 const Dashboard = () => {
   const { transactions, balances, loading, refetch } = useTransactions();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   
   // Control initial loading to prevent flash
   useEffect(() => {
-    // Set a timeout to make sure we don't show loading state for very quick responses
-    const initialLoadTimeout = setTimeout(() => {
-      if (!loading) {
+    // Set initial state
+    if (!loading) {
+      // Add a small delay before showing content to ensure smooth transition
+      const timer = setTimeout(() => {
         setIsInitialLoading(false);
-      }
-    }, 500);
-    
-    return () => clearTimeout(initialLoadTimeout);
+        setIsVisible(true);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
   }, [loading]);
 
   // Show a loading spinner while initially loading
@@ -29,7 +32,7 @@ const Dashboard = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         
-        <main className="pt-24 pb-16 animate-fade-in">
+        <main className="pt-24 pb-16">
           <div className="container app-container">
             <DashboardLoadingSpinner />
           </div>
@@ -44,7 +47,7 @@ const Dashboard = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         
-        <main className="pt-24 pb-16 animate-fade-in">
+        <main className="pt-24 pb-16">
           <div className="container app-container">
             <DashboardSkeletonLoader />
           </div>
@@ -57,8 +60,8 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="pt-24 pb-16 animate-fade-in">
-        <div className="container app-container">
+      <main className="pt-24 pb-16">
+        <div className={`container app-container transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <DashboardHeader onRefresh={refetch} />
           <DashboardContent 
             transactions={transactions} 
