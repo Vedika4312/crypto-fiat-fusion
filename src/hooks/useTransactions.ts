@@ -9,14 +9,6 @@ import {
 } from '@/services/transactionService';
 import { useToast } from '@/hooks/use-toast';
 
-interface UserBalance {
-  id: string;
-  user_id: string;
-  currency: string;
-  balance: number;
-  last_updated: Date;
-}
-
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [balances, setBalances] = useState<Record<string, number>>({});
