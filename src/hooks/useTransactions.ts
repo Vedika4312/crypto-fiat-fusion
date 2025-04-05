@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -34,18 +33,10 @@ export function useTransactions() {
     setLoading(true);
     
     try {
-      const startTime = Date.now();
-      
       const [transactionsResponse, balancesResponse] = await Promise.all([
         getTransactions(),
         getUserBalances()
       ]);
-      
-      // Ensure minimum loading time for better UX
-      const loadTime = Date.now() - startTime;
-      if (loadTime < 500) {
-        await new Promise(resolve => setTimeout(resolve, 500 - loadTime));
-      }
       
       // Process transactions
       if (transactionsResponse.data) {

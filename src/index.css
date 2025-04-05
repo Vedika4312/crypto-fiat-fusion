@@ -106,11 +106,11 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-glass transition-all duration-300 ease-spring;
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-md transition-all duration-300;
   }
   
   .glass-card:hover {
-    @apply shadow-glass-hover;
+    @apply shadow-lg;
   }
 
   .app-container {
@@ -118,7 +118,8 @@
   }
 
   .page-transition-enter {
-    @apply animate-fadeIn;
+    @apply opacity-0;
+    animation: fadeIn 0.5s ease-in-out forwards;
   }
 
   .page-transition-exit {

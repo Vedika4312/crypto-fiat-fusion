@@ -1,37 +1,24 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import DashboardHeader from '@/components/DashboardHeader';
 import DashboardContent from '@/components/DashboardContent';
-import DashboardLoadingSpinner from '@/components/DashboardLoadingSpinner';
+import DashboardSkeletonLoader from '@/components/DashboardSkeletonLoader';
 import { useTransactions } from '@/hooks/useTransactions';
 
 const Dashboard = () => {
   const { transactions, balances, loading, refetch } = useTransactions();
-  const [isReady, setIsReady] = useState(false);
   
-  useEffect(() => {
-    // Show dashboard content when data is loaded
-    if (!loading) {
-      // Add a short delay for smoother transition
-      const timer = setTimeout(() => {
-        setIsReady(true);
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [loading]);
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <main className="pt-24 pb-16">
         <div className="container app-container">
-          {!isReady ? (
-            <DashboardLoadingSpinner />
+          {loading ? (
+            <DashboardSkeletonLoader />
           ) : (
-            <div className="animate-fadeIn">
+            <div className="fade-in">
               <DashboardHeader onRefresh={refetch} />
               <DashboardContent 
                 transactions={transactions} 
