@@ -11,12 +11,22 @@ interface DashboardContentProps {
 }
 
 const DashboardContent = ({ balances, transactions }: DashboardContentProps) => {
+  // Simple check to ensure we have valid objects
+  const safeBalances = balances || {
+    USD: 0,
+    EUR: 0,
+    BTC: 0,
+    ETH: 0
+  };
+  
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Balance Card */}
       <BalanceCard 
         className="lg:col-span-2" 
-        balances={balances}
+        balances={safeBalances}
         isLoading={false}
       />
       
@@ -25,14 +35,14 @@ const DashboardContent = ({ balances, transactions }: DashboardContentProps) => 
       
       {/* Balance Table */}
       <BalanceTable 
-        balances={balances}
+        balances={safeBalances}
         isLoading={false}
         className="lg:col-span-3"
       />
       
       {/* Transaction History */}
       <TransactionList 
-        transactions={transactions} 
+        transactions={safeTransactions}
         isLoading={false}
         className="lg:col-span-3"
       />

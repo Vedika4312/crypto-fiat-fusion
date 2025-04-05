@@ -12,28 +12,39 @@ import { useToast } from '@/hooks/use-toast';
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [balances, setBalances] = useState<Record<string, number>>({});
+  const [balances, setBalances] = useState<Record<string, number>>({
+    USD: 0,
+    EUR: 0,
+    BTC: 0,
+    ETH: 0
+  });
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Function to fetch data
   const fetchData = async () => {
-    if (!user) {
-      // Set default empty states if no user
-      setTransactions([]);
-      setBalances({
-        USD: 0,
-        EUR: 0,
-        BTC: 0,
-        ETH: 0
-      });
-      setLoading(false);
-      return;
-    }
-    
+    console.log("Starting data fetch, user:", user?.id);
     setLoading(true);
     
     try {
+      // Default empty states if no user
+      if (!user) {
+        console.log("No user found, using default values");
+        setTransactions([]);
+        setBalances({
+          USD: 0,
+          EUR: 0,
+          BTC: 0,
+          ETH: 0
+        });
+        setLoading(false);
+        return;
+      }
+      
+      console.log("Fetching transaction data for user:", user.id);
+      
+      // Using Promise.all to fetch data concurrently
       const [transactionsResponse, balancesResponse] = await Promise.all([
         getTransactions(),
         getUserBalances()
@@ -46,8 +57,10 @@ export function useTransactions() {
           transaction.recipient_id === user.id || 
           transaction.sender_id === user.id
         );
+        console.log(`Found ${userTransactions.length} transactions`);
         setTransactions(userTransactions);
       } else {
+        console.log("No transactions found or error occurred");
         setTransactions([]);
       }
       
@@ -58,6 +71,7 @@ export function useTransactions() {
           balanceRecord[balance.currency] = Number(balance.balance);
         });
         
+        // Ensure all expected currencies exist
         const supportedCurrencies = ['USD', 'EUR', 'BTC', 'ETH'];
         supportedCurrencies.forEach(currency => {
           if (balanceRecord[currency] === undefined) {
@@ -65,8 +79,10 @@ export function useTransactions() {
           }
         });
         
+        console.log("Balance data:", balanceRecord);
         setBalances(balanceRecord);
       } else {
+        console.log("No balance data found or error occurred");
         setBalances({
           USD: 0,
           EUR: 0,
@@ -91,12 +107,14 @@ export function useTransactions() {
         variant: "destructive",
       });
     } finally {
+      console.log("Finished data fetch, setting loading to false");
       setLoading(false);
     }
   };
 
   // Fetch data on mount or when user changes
   useEffect(() => {
+    console.log("useTransactions effect triggered, current user:", user?.id);
     fetchData();
   }, [user]);
 
@@ -104,6 +122,7 @@ export function useTransactions() {
   useEffect(() => {
     if (!user) return;
     
+    console.log("Setting up transaction subscription for user:", user.id);
     const unsubscribe = subscribeToTransactions((transaction) => {
       if (transaction.user_id === user.id || 
           transaction.recipient_id === user.id || 
@@ -123,6 +142,7 @@ export function useTransactions() {
             variant: "default",
           });
           
+          // Update balances after receiving payment
           getUserBalances().then(response => {
             if (response.data) {
               const balanceRecord: Record<string, number> = {};
@@ -141,6 +161,7 @@ export function useTransactions() {
             }
           });
         } else if (transaction.type === 'send' && transaction.sender_id === user.id) {
+          // Update balances after sending payment
           getUserBalances().then(response => {
             if (response.data) {
               const balanceRecord: Record<string, number> = {};
@@ -163,6 +184,7 @@ export function useTransactions() {
     });
     
     return () => {
+      console.log("Cleaning up transaction subscription");
       unsubscribe();
     };
   }, [user, toast]);
