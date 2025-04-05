@@ -18,7 +18,7 @@ const Dashboard = () => {
           {loading ? (
             <DashboardSkeletonLoader />
           ) : (
-            <div className="fade-in">
+            <div className="space-y-6">
               <DashboardHeader onRefresh={refetch} />
               <DashboardContent 
                 transactions={transactions} 
