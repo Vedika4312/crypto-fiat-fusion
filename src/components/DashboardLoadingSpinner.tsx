@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 
 const DashboardLoadingSpinner = () => {
   return (
-    <div className="flex flex-col items-center justify-center h-[70vh]">
+    <div className="flex flex-col items-center justify-center min-h-[70vh]">
       <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
         <Loader2 className="h-10 w-10 text-primary animate-spin" />
       </div>

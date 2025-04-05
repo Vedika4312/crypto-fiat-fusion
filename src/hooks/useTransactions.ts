@@ -38,7 +38,6 @@ export function useTransactions() {
           BTC: 0,
           ETH: 0
         });
-        setLoading(false);
         return;
       }
       
@@ -116,6 +115,8 @@ export function useTransactions() {
   useEffect(() => {
     console.log("useTransactions effect triggered, current user:", user?.id);
     fetchData();
+    // We don't include toast in the dependency array as it's unlikely to change
+    // and may cause unnecessary refetches
   }, [user]);
 
   // Subscribe to transaction updates

@@ -11,7 +11,7 @@ interface DashboardContentProps {
 }
 
 const DashboardContent = ({ balances, transactions }: DashboardContentProps) => {
-  // Simple check to ensure we have valid objects
+  // Safe defaults
   const safeBalances = balances || {
     USD: 0,
     EUR: 0,
