@@ -1,41 +1,42 @@
 
 import { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import DashboardContent from '@/components/DashboardContent';
+import DashboardErrorBoundary from '@/components/DashboardErrorBoundary';
+import DashboardLoadingSpinner from '@/components/DashboardLoadingSpinner';
+import RevisedDashboardContent from '@/components/RevisedDashboardContent';
 import { useTransactions } from '@/hooks/useTransactions';
-import { Loader2 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
 
 const Dashboard = () => {
-  const { transactions, balances, loading, refetch } = useTransactions();
+  const { transactions, balances, loading, error, refetch } = useTransactions();
   
   useEffect(() => {
-    console.log("Dashboard rendering with:", {
+    console.log("Dashboard mounted with state:", {
       loading,
-      transactionsCount: transactions?.length,
-      balancesKeys: balances ? Object.keys(balances) : []
+      hasTransactions: transactions?.length > 0,
+      hasBalances: balances && Object.keys(balances).length > 0,
+      error: error ? "Error occurred" : "No error"
     });
-  }, [loading, transactions, balances]);
+  }, [transactions, balances, loading, error]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <Toaster />
       
-      <main className="pt-24 pb-16">
-        <div className="container">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh]">
-              <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-              <p className="text-lg text-muted-foreground">Loading your dashboard...</p>
-            </div>
-          ) : (
-            <DashboardContent 
-              transactions={transactions || []} 
-              balances={balances || {}}
-              onRefresh={refetch} 
-            />
-          )}
+      <main className="pt-20 pb-16">
+        <div className="container px-4">
+          <DashboardErrorBoundary>
+            {loading ? (
+              <DashboardLoadingSpinner />
+            ) : (
+              <RevisedDashboardContent 
+                transactions={transactions || []} 
+                balances={balances || {}}
+                onRefresh={refetch} 
+              />
+            )}
+          </DashboardErrorBoundary>
         </div>
       </main>
     </div>

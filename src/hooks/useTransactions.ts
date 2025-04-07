@@ -12,25 +12,50 @@ import { useToast } from '@/hooks/use-toast';
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [balances, setBalances] = useState<Record<string, number>>({
-    USD: 0,
-    EUR: 0,
-    BTC: 0,
-    ETH: 0
-  });
+  const [balances, setBalances] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Helper function to update balances from API response
+  const processBalancesData = useCallback((data: UserBalance[]) => {
+    if (!Array.isArray(data)) {
+      console.error("Invalid balance data format", data);
+      return {};
+    }
+    
+    const balanceRecord: Record<string, number> = {};
+    data.forEach((balance: UserBalance) => {
+      if (balance && balance.currency) {
+        balanceRecord[balance.currency] = Number(balance.balance) || 0;
+      }
+    });
+    
+    // Ensure all expected currencies exist with default values
+    const supportedCurrencies = ['USD', 'EUR', 'BTC', 'ETH'];
+    supportedCurrencies.forEach(currency => {
+      if (balanceRecord[currency] === undefined) {
+        balanceRecord[currency] = 0;
+      }
+    });
+    
+    return balanceRecord;
+  }, []);
+
   // Function to fetch data
   const fetchData = useCallback(async () => {
-    console.log("Fetching transaction data, user:", user?.id);
+    console.log("Fetching transaction data for user:", user?.id);
     setLoading(true);
+    setError(null);
     
     try {
       if (!user) {
-        console.log("No user found, using default values");
+        console.log("No authenticated user found");
         setTransactions([]);
+        setBalances({});
+        setLoading(false);
         return;
       }
       
@@ -41,40 +66,34 @@ export function useTransactions() {
       ]);
       
       // Process transactions
-      if (transactionsResponse.data) {
-        console.log(`Found ${transactionsResponse.data.length} transactions`);
-        setTransactions(transactionsResponse.data);
-      } else if (transactionsResponse.error) {
+      if (transactionsResponse.error) {
         console.error("Error fetching transactions:", transactionsResponse.error);
+        setError(new Error(transactionsResponse.error.message || 'Failed to load transactions'));
         toast({
           title: "Failed to load transactions",
           description: "Please try refreshing the page",
           variant: "destructive",
         });
+      } else {
+        const userTransactions = Array.isArray(transactionsResponse.data) 
+          ? transactionsResponse.data
+          : [];
+          
+        console.log(`Found ${userTransactions.length} transactions`);
+        setTransactions(userTransactions);
       }
       
       // Process balances
-      if (balancesResponse.data) {
-        const balanceRecord: Record<string, number> = {};
-        balancesResponse.data.forEach((balance: UserBalance) => {
-          balanceRecord[balance.currency] = Number(balance.balance);
-        });
-        
-        // Ensure all expected currencies exist
-        const supportedCurrencies = ['USD', 'EUR', 'BTC', 'ETH'];
-        supportedCurrencies.forEach(currency => {
-          if (balanceRecord[currency] === undefined) {
-            balanceRecord[currency] = 0;
-          }
-        });
-        
-        console.log("Balance data:", balanceRecord);
-        setBalances(balanceRecord);
-      } else if (balancesResponse.error) {
+      if (balancesResponse.error) {
         console.error("Error fetching balances:", balancesResponse.error);
+      } else {
+        const balanceData = processBalancesData(balancesResponse.data || []);
+        console.log("Processed balance data:", balanceData);
+        setBalances(balanceData);
       }
-    } catch (error) {
-      console.error('Error in fetchData:', error);
+    } catch (err) {
+      console.error('Error in fetchData:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
       toast({
         title: "Failed to load data",
         description: "Please try refreshing the page",
@@ -83,11 +102,11 @@ export function useTransactions() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, processBalancesData]);
 
-  // Fetch data on mount or when user changes
+  // Initial data fetch
   useEffect(() => {
-    console.log("useTransactions effect triggered, current user:", user?.id);
+    console.log("Initial data fetch triggered, user:", user?.id);
     fetchData();
   }, [fetchData, user]);
 
@@ -97,7 +116,7 @@ export function useTransactions() {
     
     console.log("Setting up transaction subscription for user:", user.id);
     const unsubscribe = subscribeToTransactions((transaction) => {
-      console.log("New transaction received:", transaction.id);
+      console.log("Real-time transaction received:", transaction.id);
       
       // Update transactions list
       setTransactions(prevTransactions => {
@@ -116,49 +135,36 @@ export function useTransactions() {
           description: `You received ${transaction.amount} ${transaction.currency}`,
         });
         
-        // Update balances after receiving payment
+        // Refresh balances after receiving payment
         getUserBalances().then(response => {
           if (response.data) {
-            updateBalancesFromResponse(response.data);
+            const updatedBalances = processBalancesData(response.data);
+            setBalances(updatedBalances);
           }
         });
       } else if (transaction.type === 'send' && transaction.sender_id === user.id) {
-        // Update balances after sending payment
+        // Refresh balances after sending payment
         getUserBalances().then(response => {
           if (response.data) {
-            updateBalancesFromResponse(response.data);
+            const updatedBalances = processBalancesData(response.data);
+            setBalances(updatedBalances);
           }
         });
       }
     });
     
-    // Helper function to update balances from response
-    const updateBalancesFromResponse = (data: UserBalance[]) => {
-      const balanceRecord: Record<string, number> = {};
-      data.forEach((balance: UserBalance) => {
-        balanceRecord[balance.currency] = Number(balance.balance);
-      });
-      
-      const supportedCurrencies = ['USD', 'EUR', 'BTC', 'ETH'];
-      supportedCurrencies.forEach(currency => {
-        if (balanceRecord[currency] === undefined) {
-          balanceRecord[currency] = 0;
-        }
-      });
-      
-      setBalances(balanceRecord);
-    };
-    
+    // Cleanup subscription on unmount
     return () => {
       console.log("Cleaning up transaction subscription");
       unsubscribe();
     };
-  }, [user, toast]);
+  }, [user, toast, processBalancesData]);
 
   return {
     transactions,
     balances,
     loading,
+    error,
     refetch: fetchData
   };
 }
